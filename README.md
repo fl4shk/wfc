@@ -1,6 +1,9 @@
 # wfc
 Wave Function Collapse in C++20
 
+This requires the C++ version `pcg_random`.
+Also, make sure you recurse submodules when cloning.
+
 Example:
 ```
 $ ./wfc land_sea_coast.txt 20 10
