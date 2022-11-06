@@ -36,17 +36,18 @@ constexpr inline std::ostream& operator << (
 	switch (d) {
 	//--------
 	case Dir::Left:
-		return osprintout(os, "Dir::Left");
+		os << "Dir::Left";
 	case Dir::Top:
-		return osprintout(os, "Dir::Top");
+		os << "Dir::Top";
 	case Dir::Right:
-		return osprintout(os, "Dir::Right");
+		os << "Dir::Right";
 	case Dir::Bottom:
-		return osprintout(os, "Dir::Bottom");
+		os << "Dir::Bottom";
 	default:
-		return osprintout(os, "Dir::Bad");
+		os << "Dir::Bad";
 	//--------
 	}
+	return os;
 }
 
 class Rule final {
@@ -66,13 +67,13 @@ public:		// functions
 	}
 };
 using RuleUset = std::unordered_set<Rule>;
-constexpr inline std::ostream& operator << (
+inline std::ostream& operator << (
 	std::ostream& os, const Rule& rule
 ) {
 	os
-		<< "{" << "\'" << rule.t0 << "\' << "
-		<< "\'" << rule.t1 << "\' << "
-		<< rule.d << "}";
+		<< "{" << "\'" << rule.t0 << "\', "
+			<< "\'" << rule.t1 << "\', "
+			<< rule.d << "}";
 	return os;
 }
 //--------

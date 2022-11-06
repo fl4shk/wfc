@@ -1,6 +1,7 @@
 *.o
 *.a
 *.d
+*.P
 *.elf
 *.sav*
 *.ss*
@@ -9,3 +10,5 @@
 tags
 types_*.taghl
 *.ignore
+wfc
+wfc_debug
