@@ -47,10 +47,13 @@ private:		// variables
 	Vec2<size_t> _size_2d;
 	Potential _potential;
 	//std::unordered_map<u32, RuleUset> _rules_umap;
-	RuleUset _rule_uset;
+	//RuleUset _rule_uset;
+
+	// This maps rules to their weights
+	std::unordered_map<Rule, double> _r2w_umap;
 
 	std::unordered_map<u32, double>
-		_weight_umap; // This maps tiles to their weights
+		_full_weight_umap; // This maps tiles to their weights
 public:		// types
 	using Rng = pcg64;
 	using Ddist = std::discrete_distribution<u64>;
@@ -68,8 +71,9 @@ public:		// functions
 	GEN_GETTER_BY_CON_REF(size_2d);
 	GEN_GETTER_BY_CON_REF(potential);
 	//GEN_GETTER_BY_CON_REF(rules_umap);
-	GEN_GETTER_BY_CON_REF(rule_uset);
-	GEN_GETTER_BY_CON_REF(weight_umap);
+	//GEN_GETTER_BY_CON_REF(rule_uset);
+	GEN_GETTER_BY_CON_REF(r2w_umap);
+	GEN_GETTER_BY_CON_REF(full_weight_umap);
 	//GEN_GETTER_BY_CON_REF(tprops_umap);
 private:		// functions
 	void _learn(const std::vector<std::vector<u32>>& input_tiles);
@@ -79,7 +83,7 @@ private:		// functions
 	class CollapseTemps final {
 	public:		// variables
 		Vec2<size_t> pos;
-		std::vector<double> weight_darr;
+		std::vector<double> full_weight_darr;
 		std::vector<u32> tile_darr;
 		std::unordered_map<u32, size_t> tid_umap;
 	};
