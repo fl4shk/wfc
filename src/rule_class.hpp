@@ -7,6 +7,7 @@
 
 namespace wfc {
 //--------
+// Direction
 enum class Dir: u32 {
 	Left = 0,
 	Top = 1,
@@ -14,6 +15,7 @@ enum class Dir: u32 {
 	Bottom = 3,
 	Bad = 4,
 };
+
 constexpr inline Dir reverse(Dir d) {
 	switch (d) {
 	//--------
@@ -50,6 +52,35 @@ constexpr inline std::ostream& operator << (
 	return os;
 }
 
+// Rotation
+enum class Rot: u32 {
+	Deg0 = 0,
+	Deg90 = 1,
+	Deg180 = 2,
+	Deg270 = 3,
+	Bad = 4,
+};
+
+constexpr inline std::ostream& operator << (
+	std::ostream& os, const Rot& r
+) {
+	switch (r) {
+	//--------
+	case Rot::Deg0:
+		os << "Rot::Deg0";
+	case Rot::Deg90:
+		os << "Rot::Deg90";
+	case Rot::Deg180:
+		os << "Rot::Deg180";
+	case Rot::Deg270:
+		os << "Rot::Deg270";
+	default:
+		os << "Rot::Bad";
+	//--------
+	}
+	return os;
+}
+
 class Rule final {
 public:		// variables
 	u32 t0, t1; // tiles
@@ -67,14 +98,17 @@ public:		// functions
 	}
 };
 using RuleUset = std::unordered_set<Rule>;
-inline std::ostream& operator << (
+constexpr inline std::ostream& operator << (
 	std::ostream& os, const Rule& rule
 ) {
-	os
-		<< "{" << "\'" << rule.t0 << "\', "
-			<< "\'" << rule.t1 << "\', "
-			<< rule.d << "}";
-	return os;
+	//os
+	//	<< "{" << "\'" << rule.t0 << "\', "
+	//		<< "\'" << rule.t1 << "\', "
+	//		<< rule.d << "}";
+	return osprintout(os,
+		"{", "\'", rule.t0, "\', ",
+			"\'", rule.t1, "\', ",
+			rule.d, "}");
 }
 //--------
 } // namespace wfc
