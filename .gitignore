@@ -1,0 +1,11 @@
+*.o
+*.a
+*.d
+*.elf
+*.sav*
+*.ss*
+*.gdb_history*
+*.sw[po]
+tags
+types_*.taghl
+*.ignore

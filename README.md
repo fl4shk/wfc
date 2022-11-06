@@ -1,2 +1,2 @@
 # wfc
-Wave Function Collapse in C++
+Wave Function Collapse in C++20
