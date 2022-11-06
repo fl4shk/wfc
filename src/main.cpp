@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 	wfc::Wfc the_wfc(size_2d, seed, input_tiles);
 	for (size_t j=0; j<the_wfc.potential().size(); ++j) {
 		const auto& row = the_wfc.potential().at(j);
-		printout(j, ": ");
+		//printout(j, ": ");
 		for (size_t i=0; i<row.size(); ++i) {
 			const auto& uset = row.at(i);
 			if (uset.size() != 1) {

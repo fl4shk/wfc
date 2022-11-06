@@ -28,7 +28,7 @@ void Wfc::_learn(const std::vector<std::vector<u32>>& input_tiles) {
 	//_rules_umap.clear();
 	//_rule_uset.clear();
 	_r2w_umap.clear();
-	_full_weight_umap.clear();
+	_weight_umap.clear();
 
 	PotElem pot_elem;
 
@@ -42,10 +42,10 @@ void Wfc::_learn(const std::vector<std::vector<u32>>& input_tiles) {
 			// `input_tiles` have a higher weight
 			const u32& item = row.at(i);
 			pot_elem.insert(item);
-			if (full_weight_umap().contains(item)) {
-				_full_weight_umap.at(item) += 1.0;
-			} else { // if (!full_weight_umap().contains(item))
-				_full_weight_umap.insert(std::pair(item, 1.0));
+			if (weight_umap().contains(item)) {
+				_weight_umap.at(item) += 1.0;
+			} else { // if (!weight_umap().contains(item))
+				_weight_umap.insert(std::pair(item, 1.0));
 			}
 		}
 	}
@@ -131,7 +131,9 @@ bool Wfc::_gen_iteration() {
 	//const std::vector<Vec2<size_t>>& non_zero_pos
 	//	= find_true(to_collapse);
 	const CollapseTemps ct = _calc_collapse_temps(*to_collapse_pos);
-	Ddist ddist(ct.full_weight_darr.begin(), ct.full_weight_darr.end());
+	//Ddist ddist(ct.weight_darr.begin(), ct.weight_darr.end());
+	Ddist ddist(ct.modded_weight_darr.begin(),
+		ct.modded_weight_darr.end());
 	to_collapse.clear();
 	const auto rng_val = ddist(_rng);
 	//const u32* tile = &ct.tile_darr.at(rng_val);
@@ -151,25 +153,68 @@ auto Wfc::_calc_collapse_temps(
 	ret.pos = pos;
 	const PotElem& pot_elem = potential().at(pos.y).at(pos.x);
 
-	//std::vector<double> full_weight_darr;
+	//std::vector<double> weight_darr;
 	//std::unordered_map<u32, size_t> tid_umap;
 	if (size_t i=0; true) {
 		for (const auto& item: pot_elem) {
-			//ret.full_weight_darr.push_back(tprops_umap().at(item.first).weight);
-			//if (item.second.valid) 
-			//if (item.second)
-			//{
-				//ret.full_weight_darr.push_back(full_weight_umap().at(item.first));
-				ret.full_weight_darr.push_back(full_weight_umap().at(item));
-				//ret.tile_darr.push_back(item.first);
-				ret.tile_darr.push_back(item);
-				//ret.tid_umap.insert(std::pair(item.first, i));
-				ret.tid_umap.insert(std::pair(item, i));
-				++i;
-			//}
+			//ret.weight_darr.push_back(weight_umap().at(item.first));
+			//ret.tile_darr.push_back(item.first);
+			//ret.tid_umap.insert(std::pair(item.first, i));
+			//ret.weight_darr.push_back(weight_umap().at(item));
+			ret.modded_weight_darr.push_back(_calc_modded_weight
+				(pos, item));
+			ret.tile_darr.push_back(item);
+			ret.tid_umap.insert(std::pair(item, i));
+			++i;
 		}
 	}
 
+	return ret;
+}
+double Wfc::_calc_modded_weight(
+	const Vec2<size_t>& pos, const u32& item
+) const {
+	double ret = 0.0;
+
+	const std::vector<Neighbor>& neighbors(_neighbors(pos));
+
+	bool found = false;
+	// If any tiles have been fully decided, we can add to this tile's
+	// weight based on `_r2w_umap`.
+	for (const auto& r2w_pair: r2w_umap()) {
+		if (r2w_pair.first.t0 == item) {
+			for (const Neighbor& neighbor: neighbors) {
+				const PotElem& nb_pot_elem
+					= potential().at(neighbor.pos.y).at(neighbor.pos.x);
+				if (
+					nb_pot_elem.size() == 1
+					&& r2w_pair.first.t1 == *nb_pot_elem.begin()
+					&& r2w_pair.first.d == neighbor.d
+				) {
+					found = true;
+					ret += r2w_pair.second;
+					break;
+				}
+			}
+		} else if (r2w_pair.first.t1 == item) {
+			for (const Neighbor& neighbor: neighbors) {
+				const PotElem& nb_pot_elem
+					= potential().at(neighbor.pos.y).at(neighbor.pos.x);
+				if (
+					nb_pot_elem.size() == 1
+					&& r2w_pair.first.t0 == *nb_pot_elem.begin()
+					&& r2w_pair.first.d == neighbor.d
+				) {
+					found = true;
+					ret += r2w_pair.second;
+					break;
+				}
+			}
+		}
+	}
+	if (!found) {
+		ret = weight_umap().at(item);
+	}
 	return ret;
 }
 std::optional<Vec2<size_t>> Wfc::_rand_pos_w_least_entropy() {
@@ -200,10 +245,10 @@ std::optional<Vec2<size_t>> Wfc::_rand_pos_w_least_entropy() {
 
 			double temp_entropy = 0.0;
 			//for (const auto& tile: tiles)
-			//for (const auto& weight: ct.full_weight_darr)
+			//for (const auto& weight: ct.weight_darr)
 			for (const auto& tile: tiles) {
-				//const double& tile_weight = full_weight_umap().at(tile.first);
-				const double& weight = full_weight_umap().at(tile);
+				//const double& tile_weight = weight_umap().at(tile.first);
+				const double& weight = weight_umap().at(tile);
 				temp_entropy -= weight * std::log(weight);
 			}
 			//temp_entropy = -temp_entropy;
@@ -250,8 +295,7 @@ void Wfc::_propagate(
 		//}
 		//printout("\n");
 
-		if (const Vec2<size_t>& pos=needs_update.front(); true)
-		{
+		if (const Vec2<size_t>& pos=needs_update.front(); true) {
 			needs_update.pop();
 			const std::vector<Neighbor>& neighbors = _neighbors(pos);
 			for (const auto& neighbor: neighbors) {
