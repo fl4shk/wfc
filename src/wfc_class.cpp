@@ -20,6 +20,18 @@ Wfc::Wfc(
 	_overlap(s_overlap),
 	_rng(s_rng_seed) {
 	//--------
+	if (mt_size_2d().x > size_2d().x) {
+		throw std::invalid_argument(sconcat
+			("Wfc::Wfc(): Error: ",
+			"_mt_size_2d.x (", mt_size_2d().x, ") is greater than ",
+			"_size_2d.x (", size_2d().x, ")."));
+	}
+	if (mt_size_2d().y > size_2d().y) {
+		throw std::invalid_argument(sconcat
+			("Wfc::Wfc(): Error: ",
+			"_mt_size_2d.y (", mt_size_2d().y, ") is greater than ",
+			"_size_2d.y (", size_2d().y, ")."));
+	}
 	_learn(input_tiles);
 	_gen();
 	//--------

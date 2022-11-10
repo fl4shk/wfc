@@ -107,7 +107,6 @@ int main(int argc, char** argv) {
 		inv_sconcat(*ap.at("-s").val, seed);
 	}
 
-
 	wfc::Wfc the_wfc
 		(size_2d, mt_size_2d,
 		input_tiles,

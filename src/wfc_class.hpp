@@ -44,12 +44,12 @@ public:		// types
 	//	double weight;
 	//};
 private:		// variables
+	Potential _potential;
 	Vec2<size_t>
 		_size_2d,
 		_mt_size_2d; // metatile size 2D
 	bool _rotate;
 	bool _overlap;
-	Potential _potential;
 	//std::unordered_map<u32, RuleUset> _rules_umap;
 	//RuleUset _rule_uset;
 
@@ -74,8 +74,9 @@ public:		// functions
 	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(Wfc);
 	~Wfc();
 
-	GEN_GETTER_BY_CON_REF(size_2d);
 	GEN_GETTER_BY_CON_REF(potential);
+	GEN_GETTER_BY_CON_REF(size_2d);
+	GEN_GETTER_BY_CON_REF(mt_size_2d);
 	//GEN_GETTER_BY_CON_REF(rules_umap);
 	//GEN_GETTER_BY_CON_REF(rule_uset);
 	GEN_GETTER_BY_CON_REF(r2w_umap);
