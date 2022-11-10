@@ -7,12 +7,17 @@ namespace wfc {
 //--------
 Wfc::Wfc() {}
 Wfc::Wfc(
-	const Vec2<size_t>& s_size_2d, u64 s_rng_seed,
-	const std::vector<std::vector<u32>>& input_tiles
+	const Vec2<size_t>& s_size_2d, const Vec2<size_t>& s_mt_size_2d,
+	const std::vector<std::vector<u32>>& input_tiles,
+	bool s_rotate, bool s_overlap,
+	u64 s_rng_seed
 ) 
 	: _size_2d(s_size_2d),
+	_mt_size_2d(s_mt_size_2d),
 	//_potential(s_size_2d.y,
 	//	std::vector<TileUset>(s_size_2d.x, TileUset())),
+	_rotate(s_rotate),
+	_overlap(s_overlap),
 	_rng(s_rng_seed) {
 	//--------
 	_learn(input_tiles);
@@ -43,6 +48,7 @@ void Wfc::_learn(const std::vector<std::vector<u32>>& input_tiles) {
 			const u32& item = row.at(i);
 			pot_elem.insert(item);
 			if (weight_umap().contains(item)) {
+				//_weight_umap.at(item) += 3.0;
 				_weight_umap.at(item) += 1.0;
 			} else { // if (!weight_umap().contains(item))
 				_weight_umap.insert(std::pair(item, 1.0));

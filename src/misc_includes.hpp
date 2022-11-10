@@ -24,7 +24,7 @@
 #include "liborangepower_src/math/vec2_classes.hpp"
 #include "liborangepower_src/math/shape_2d_classes.hpp"
 #include "liborangepower_src/time/time_stuff.hpp"
-//#include "liborangepower_src/arg_parser_class.hpp"
+#include "liborangepower_src/arg_parser_class.hpp"
 
 using namespace liborangepower::misc_output;
 using namespace liborangepower::misc_input;
@@ -36,7 +36,7 @@ using namespace liborangepower::containers;
 namespace concepts = liborangepower::concepts;
 using namespace liborangepower::math;
 using namespace liborangepower::time;
-//using namespace liborangepower::arg_parse;
+using namespace liborangepower::arg_parse;
 
 #include <pcg_random.hpp>
 #include <queue>

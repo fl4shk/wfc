@@ -44,7 +44,11 @@ public:		// types
 	//	double weight;
 	//};
 private:		// variables
-	Vec2<size_t> _size_2d;
+	Vec2<size_t>
+		_size_2d,
+		_mt_size_2d; // metatile size 2D
+	bool _rotate;
+	bool _overlap;
 	Potential _potential;
 	//std::unordered_map<u32, RuleUset> _rules_umap;
 	//RuleUset _rule_uset;
@@ -62,8 +66,10 @@ private:		// variables
 public:		// functions
 	Wfc();
 	Wfc(
-		const Vec2<size_t>& s_size_2d, u64 s_rng_seed,
-		const std::vector<std::vector<u32>>& input_tiles
+		const Vec2<size_t>& s_size_2d, const Vec2<size_t>& s_mt_size_2d,
+		const std::vector<std::vector<u32>>& input_tiles,
+		bool s_rotate, bool s_overlap,
+		u64 s_rng_seed
 	);
 	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(Wfc);
 	~Wfc();
@@ -75,6 +81,8 @@ public:		// functions
 	GEN_GETTER_BY_CON_REF(r2w_umap);
 	GEN_GETTER_BY_CON_REF(weight_umap);
 	//GEN_GETTER_BY_CON_REF(tprops_umap);
+	GEN_GETTER_BY_VAL(rotate);
+	GEN_GETTER_BY_VAL(overlap);
 private:		// functions
 	void _learn(const std::vector<std::vector<u32>>& input_tiles);
 	void _gen();

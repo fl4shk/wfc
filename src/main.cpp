@@ -3,23 +3,28 @@
 
 int main(int argc, char** argv) {
 	//--------
-	Vec2<size_t> size_2d;
-
-	if (argc < 4 || argc > 5) {
-		printerr("Usage 1: ", argv[0], " input_tiles_file width height\n");
-		printerr("Usage 2: ", argv[0],
-			" input_tiles_file width height rng_seed\n");
+	//if (argc < 4 || argc > 5) {
+	//	printerr("Usage 1: ", argv[0], " input_tiles_file width height\n");
+	//	printerr("Usage 2: ", argv[0],
+	//		" input_tiles_file width height rng_seed\n");
+	//	exit(1);
+	//}
+	ArgParser ap;
+	ap.add("--input-file", "-i", HasArg::Req, true);
+	ap.add("--width", "-w", HasArg::Req, true);
+	ap.add("--height", "-h", HasArg::Req, true);
+	ap.add("--tile-dim", "-d", HasArg::Req, false);
+	ap.add("--rotate", "-r", HasArg::None, false);
+	ap.add("--overlap", "-o", HasArg::None, false);
+	ap.add("--seed", "-s", HasArg::Req, false);
+	if (auto fail=ap.parse(argc, argv); fail) {
+		printerr("Error: invalid arguments\n");
 		exit(1);
 	}
-	//ArgParser ap;
-	//ap.add("--ifile", "-i", HasArg::Req);
-	//ap.add("--width", "-w", HasArg::Req);
-	//ap.add("--height", "-h", HasArg::Req);
-	//ap.parse(argc, argv);
 
 	std::vector<std::vector<u32>> input_tiles;
 	if (
-		std::fstream file(argv[1], std::ios_base::in);
+		std::fstream file(*ap.at("-i").val, std::ios_base::in);
 		file.is_open()
 	) {
 		while (!file.eof()) {
@@ -31,16 +36,18 @@ int main(int argc, char** argv) {
 				&& input_tiles.back().size() != line.size()
 			) {
 				printerr
-					("Input tiles file \"", argv[1], "\" has ",
-					"difference in line sizes ",
+					("Input file ",
+					"\"", *ap.at("-i").val, "\" "
+					"has difference in line sizes ",
 					"(found first instance at line numbers ",
 						"[", input_tiles.size(), ", ",
 							(input_tiles.size() + size_t(1)), "])"
 					"\n");
 				exit(1);
 			} else if (line.size() == 0) {
-				printerr("Input tiles file \"", argv[1], "\" has line ",
-					"of size 0 ",
+				printerr("Input file ",
+					"\"", *ap.at("-i").val, "\" "
+					"has line of size 0 ",
 					"(found first instance at line number ",
 						input_tiles.size(), ")",
 					"\n");
@@ -55,8 +62,9 @@ int main(int argc, char** argv) {
 			}
 		}
 	} else {
-		printerr("Couldn't open input tiles file \"", argv[1], "\" for ",
-			"reading.\n");
+		printerr("Couldn't open input file ",
+			"\"", *ap.at("-i").val, "\" ",
+			"for reading.\n");
 		exit(1);
 	}
 	//printout("Read in this these `input_tiles`\n");
@@ -64,30 +72,47 @@ int main(int argc, char** argv) {
 	//	printout(j, ": ", input_tiles.at(j), "\n");
 	//}
 
-	for (size_t i=0; i<size_2d.size(); ++i) {
-		inv_sconcat(std::string(argv[i + 2]), size_2d.at(i));
+	static constexpr size_t
+		MIN_OUTPUT_DIM = 1,
+		MAX_OUTPUT_DIM = 32;
 
-		if (size_2d.at(i) < 1 || size_2d.at(i) > 32) {
-			if (i == size_2d.IND_X) {
-				printerr("`width` (", size_2d.at(i), ") must be in the ",
-					"range [1, 32]\n");
-			} else if (i == size_2d.IND_Y) {
-				printerr("`height` (", size_2d.at(i), ") must be in the ",
-					"range [1, 32]\n");
-			}
-			exit(1);
-		}
+	Vec2<size_t> size_2d;
+	inv_sconcat(*ap.at("-w").val, size_2d.x);
+	if (size_2d.x < MIN_OUTPUT_DIM || size_2d.x > MAX_OUTPUT_DIM) {
+		printerr("`width` (", size_2d.x, ") must be in the ",
+			"range [", MIN_OUTPUT_DIM, ", ", MAX_OUTPUT_DIM, "]\n");
 	}
+	inv_sconcat(*ap.at("-h").val, size_2d.y);
+	if (size_2d.y < MIN_OUTPUT_DIM || size_2d.y > MAX_OUTPUT_DIM) {
+		printerr("`height` (", size_2d.y, ") must be in the ",
+			"range [", MIN_OUTPUT_DIM, ", ", MAX_OUTPUT_DIM, "]\n");
+	}
+
+	Vec2<size_t> mt_size_2d(1, 1);
+	if (ap.has_opts("-d")) {
+		size_t tile_dim;
+		inv_sconcat(*ap.at("-d").val, tile_dim);
+		mt_size_2d = {.x=tile_dim, .y=tile_dim};
+	}
+
+	const bool
+		rotate = ap.has_opts("-r"),
+		overlap = ap.has_opts("-o");
 
 	u64 seed;
 
-	if (argc == 4) {
+	if (!ap.has_opts("-s")) {
 		seed = get_hrc_now_rng_seed();
-	} else { // if (argc == 5)
-		inv_sconcat(std::string(argv[4]), seed);
+	} else {
+		inv_sconcat(*ap.at("-s").val, seed);
 	}
 
-	wfc::Wfc the_wfc(size_2d, seed, input_tiles);
+
+	wfc::Wfc the_wfc
+		(size_2d, mt_size_2d,
+		input_tiles,
+		rotate, overlap,
+		seed);
 	for (size_t j=0; j<the_wfc.potential().size(); ++j) {
 		const auto& row = the_wfc.potential().at(j);
 		//printout(j, ": ");
