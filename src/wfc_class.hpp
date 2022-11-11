@@ -15,17 +15,17 @@ namespace wfc {
 //	Sea = 'S',
 //	//Mountain = 'M',
 //};
-using TileUset = std::unordered_set<u32>;
+using TileUset = std::unordered_set<size_t>;
 
 class Wfc final {
 public:		// types
 	//using Potential = std::vector<std::vector<TileUset>>;
-	//using PotElem = std::pair<u32, TileUset>;
+	//using PotElem = std::pair<size_t, TileUset>;
 	//class PotElem final {
 	//public:		// variables
 	//	//TileUset domain;
-	//	std::unordered_map<u32, bool> domain;
-	//	//std::optional<u32> sel_tile = std::nullopt;
+	//	std::unordered_map<size_t, bool> domain;
+	//	//std::optional<size_t> sel_tile = std::nullopt;
 	//};
 	//class PotElemVal final {
 	//public:		// variables
@@ -33,8 +33,8 @@ public:		// types
 	//		visited,
 	//		valid;
 	//};
-	//using PotElem = std::unordered_map<u32, bool>;
-	using PotElem = std::unordered_set<u32>;
+	//using PotElem = std::unordered_map<size_t, bool>;
+	using PotElem = std::unordered_set<size_t>;
 	using Potential = std::vector<std::vector<PotElem>>;
 
 	//// "Tprops" is short for "tile properties"
@@ -48,15 +48,17 @@ private:		// variables
 	Vec2<size_t>
 		_size_2d,
 		_mt_size_2d; // metatile size 2D
-	bool _rotate;
-	bool _overlap;
-	//std::unordered_map<u32, RuleUset> _rules_umap;
+	bool
+		_no_rotate,
+		_no_reflect,
+		_no_overlap;
+	//std::unordered_map<size_t, RuleUset> _rules_umap;
 	//RuleUset _rule_uset;
 
 	// This maps rules to their weights
 	std::unordered_map<Rule, double> _r2w_umap;
 
-	std::unordered_map<u32, double>
+	std::unordered_map<size_t, double>
 		_weight_umap; // This maps tiles to their weights
 public:		// types
 	using Rng = pcg64;
@@ -67,8 +69,8 @@ public:		// functions
 	Wfc();
 	Wfc(
 		const Vec2<size_t>& s_size_2d, const Vec2<size_t>& s_mt_size_2d,
-		const std::vector<std::vector<u32>>& input_tiles,
-		bool s_rotate, bool s_overlap,
+		const std::vector<std::vector<size_t>>& input_tiles,
+		bool s_no_rotate, bool s_no_reflect, bool s_no_overlap,
 		u64 s_rng_seed
 	);
 	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(Wfc);
@@ -82,10 +84,11 @@ public:		// functions
 	GEN_GETTER_BY_CON_REF(r2w_umap);
 	GEN_GETTER_BY_CON_REF(weight_umap);
 	//GEN_GETTER_BY_CON_REF(tprops_umap);
-	GEN_GETTER_BY_VAL(rotate);
-	GEN_GETTER_BY_VAL(overlap);
+	GEN_GETTER_BY_VAL(no_rotate);
+	GEN_GETTER_BY_VAL(no_reflect);
+	GEN_GETTER_BY_VAL(no_overlap);
 private:		// functions
-	void _learn(const std::vector<std::vector<u32>>& input_tiles);
+	void _learn(const std::vector<std::vector<size_t>>& input_tiles);
 	void _gen();
 	//--------
 	bool _gen_iteration();
@@ -95,14 +98,14 @@ private:		// functions
 		std::vector<double>
 			//weight_darr;
 			modded_weight_darr;
-		std::vector<u32> tile_darr;
-		std::unordered_map<u32, size_t> tid_umap;
+		std::vector<size_t> tile_darr;
+		std::unordered_map<size_t, size_t> tid_umap;
 	};
 	CollapseTemps _calc_collapse_temps(
 		const Vec2<size_t>& pos
 	) const;
 	double _calc_modded_weight(
-		const Vec2<size_t>& pos, const u32& item
+		const Vec2<size_t>& pos, const size_t& item
 	) const;
 	//--------
 	std::optional<Vec2<size_t>> _rand_pos_w_least_entropy();

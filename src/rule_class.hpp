@@ -13,7 +13,7 @@ enum class Dir: u32 {
 	Top = 1,
 	Right = 2,
 	Bottom = 3,
-	Bad = 4,
+	//Bad = 4,
 };
 
 constexpr inline Dir reverse(Dir d) {
@@ -28,7 +28,10 @@ constexpr inline Dir reverse(Dir d) {
 	case Dir::Bottom:
 		return Dir::Top;
 	default:
-		return Dir::Bad;
+		//return Dir::Bad;
+		throw std::invalid_argument(sconcat
+			("wfc::reverse(): Error: ",
+			"unknown `Dir` ", u32(d), "."));
 	//--------
 	}
 }
@@ -38,18 +41,20 @@ constexpr inline std::ostream& operator << (
 	switch (d) {
 	//--------
 	case Dir::Left:
-		os << "Dir::Left";
+		return osprintout(os, "Dir::Left");
 	case Dir::Top:
-		os << "Dir::Top";
+		return osprintout(os, "Dir::Top");
 	case Dir::Right:
-		os << "Dir::Right";
+		return osprintout(os, "Dir::Right");
 	case Dir::Bottom:
-		os << "Dir::Bottom";
+		return osprintout(os, "Dir::Bottom");
 	default:
-		os << "Dir::Bad";
+		//return osprintout(os, "Dir::Bad");
+		throw std::invalid_argument(sconcat
+			("wfc::operator << (std::ostream&, const Dir&): Error: ",
+			"unknown `Dir` ", u32(d), "."));
 	//--------
 	}
-	return os;
 }
 
 // Rotation
@@ -58,7 +63,7 @@ enum class Rot: u32 {
 	Deg90 = 1,
 	Deg180 = 2,
 	Deg270 = 3,
-	Bad = 4,
+	//Bad = 4,
 };
 
 constexpr inline std::ostream& operator << (
@@ -67,23 +72,54 @@ constexpr inline std::ostream& operator << (
 	switch (r) {
 	//--------
 	case Rot::Deg0:
-		os << "Rot::Deg0";
+		return osprintout(os, "Rot::Deg0");
 	case Rot::Deg90:
-		os << "Rot::Deg90";
+		return osprintout(os, "Rot::Deg90");
 	case Rot::Deg180:
-		os << "Rot::Deg180";
+		return osprintout(os, "Rot::Deg180");
 	case Rot::Deg270:
-		os << "Rot::Deg270";
+		return osprintout(os, "Rot::Deg270");
 	default:
-		os << "Rot::Bad";
+		//return osprintout(os, "Rot::Bad");
+		throw std::invalid_argument(sconcat
+			("wfc::operator << (std::ostream&, const Rot&): Error: ",
+			"unknown `Rot` ", u32(r), "."));
 	//--------
 	}
-	return os;
 }
+
+class Metatile final {
+private:		// variables
+	std::vector<std::vector<size_t>> _data;
+public:		// functions
+	Metatile(size_t s_dim);
+	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(Metatile);
+	~Metatile();
+
+	inline size_t dim() const {
+		return data().size();
+	}
+	inline Vec2<size_t> size_2d() const {
+		//return {.x=data().front().size(), .y=data().size()};
+		return {.x=dim(), .y=dim()};
+	}
+	inline size_t& at(const Vec2<size_t>& pos) {
+		return _data.at(pos.y).at(pos.x);
+	}
+	inline const size_t& at(const Vec2<size_t>& pos) const {
+		return _data.at(pos.y).at(pos.x);
+	}
+
+	// rotate plus 90 degrees
+	Metatile& rotate_p90();
+
+	GEN_GETTER_BY_CON_REF(data);
+};
 
 class Rule final {
 public:		// variables
-	u32 t0, t1; // tiles
+	size_t t0, t1; // tiles
+	//Metatile t0, t1;
 	Dir d; // direction
 public:		// functions
 	constexpr inline auto operator <=> (

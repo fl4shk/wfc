@@ -10,20 +10,22 @@ int main(int argc, char** argv) {
 	//	exit(1);
 	//}
 	ArgParser ap;
-	ap.add("--input-file", "-i", HasArg::Req, true, true);
-	ap.add("--width", "-w", HasArg::Req, true, true);
-	ap.add("--height", "-h", HasArg::Req, true, true);
-	ap.add("--tile-dim", "-d", HasArg::Req, false, true);
-	ap.add("--rotate", "-r", HasArg::None, false, true);
-	ap.add("--overlap", "-o", HasArg::None, false, true);
-	ap.add("--seed", "-s", HasArg::Req, false, true);
+	ap
+		.add_singleton("--input-file", "-i", HasArg::Req, true)
+		.add_singleton("--width", "-w", HasArg::Req, true)
+		.add_singleton("--height", "-h", HasArg::Req, true)
+		.add_singleton("--tile-dim", "-d", HasArg::Req, false)
+		.add_singleton("--no-rotate", "-r", HasArg::None, false)
+		.add_singleton("--no-reflect", "-R", HasArg::None, false)
+		.add_singleton("--no-overlap", "-o", HasArg::None, false)
+		.add_singleton("--seed", "-s", HasArg::Req, false);
 	if (const auto& ap_ret=ap.parse(argc, argv); ap_ret.fail()) {
 		//printerr("Error: invalid arguments\n");
 		printerr(ap.help_msg(argc, argv));
 		exit(1);
 	}
 
-	std::vector<std::vector<u32>> input_tiles;
+	std::vector<std::vector<size_t>> input_tiles;
 	if (
 		std::fstream file(ap.at("-i", 0).val, std::ios_base::in);
 		file.is_open()
@@ -55,9 +57,9 @@ int main(int argc, char** argv) {
 				exit(1);
 			} else {
 				//input_tiles.push_back(std::move(line));
-				std::vector<u32> darr;
+				std::vector<size_t> darr;
 				for (const auto& c: line) {
-					darr.push_back(static_cast<u32>(c));
+					darr.push_back(static_cast<size_t>(c));
 				}
 				input_tiles.push_back(std::move(darr));
 			}
@@ -97,8 +99,9 @@ int main(int argc, char** argv) {
 	}
 
 	const bool
-		rotate = ap.has_opts("-r"),
-		overlap = ap.has_opts("-o");
+		no_rotate = ap.has_opts("--no-rotate"),
+		no_reflect = ap.has_opts("--no-reflect"),
+		no_overlap = ap.has_opts("-no-overlap");
 
 	u64 rng_seed;
 
@@ -111,7 +114,7 @@ int main(int argc, char** argv) {
 	wfc::Wfc the_wfc
 		(size_2d, mt_size_2d,
 		input_tiles,
-		rotate, overlap,
+		no_rotate, no_reflect, no_overlap,
 		rng_seed);
 	for (size_t j=0; j<the_wfc.potential().size(); ++j) {
 		const auto& row = the_wfc.potential().at(j);

@@ -8,16 +8,17 @@ namespace wfc {
 Wfc::Wfc() {}
 Wfc::Wfc(
 	const Vec2<size_t>& s_size_2d, const Vec2<size_t>& s_mt_size_2d,
-	const std::vector<std::vector<u32>>& input_tiles,
-	bool s_rotate, bool s_overlap,
+	const std::vector<std::vector<size_t>>& input_tiles,
+	bool s_no_rotate, bool s_no_reflect, bool s_no_overlap,
 	u64 s_rng_seed
 ) 
 	: _size_2d(s_size_2d),
 	_mt_size_2d(s_mt_size_2d),
 	//_potential(s_size_2d.y,
 	//	std::vector<TileUset>(s_size_2d.x, TileUset())),
-	_rotate(s_rotate),
-	_overlap(s_overlap),
+	_no_rotate(s_no_rotate),
+	_no_reflect(s_no_reflect),
+	_no_overlap(s_no_overlap),
 	_rng(s_rng_seed) {
 	//--------
 	if (mt_size_2d().x > size_2d().x) {
@@ -38,7 +39,7 @@ Wfc::Wfc(
 }
 Wfc::~Wfc() {}
 
-void Wfc::_learn(const std::vector<std::vector<u32>>& input_tiles) {
+void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	//--------
 	//_tprops_umap.clear();
 	_potential.clear();
@@ -57,7 +58,7 @@ void Wfc::_learn(const std::vector<std::vector<u32>>& input_tiles) {
 		for (i32 i=0; i<i32(row.size()); ++i) {
 			// Insert weights, so that tiles that appear more often in
 			// `input_tiles` have a higher weight
-			const u32& item = row.at(i);
+			const size_t& item = row.at(i);
 			pot_elem.insert(item);
 			if (weight_umap().contains(item)) {
 				//_weight_umap.at(item) += 3.0;
@@ -154,7 +155,7 @@ bool Wfc::_gen_iteration() {
 		ct.modded_weight_darr.end());
 	to_collapse.clear();
 	const auto rng_val = ddist(_rng);
-	//const u32* tile = &ct.tile_darr.at(rng_val);
+	//const size_t* tile = &ct.tile_darr.at(rng_val);
 	//to_collapse.at(ct.tile_darr.at(rng_val)) = true;
 	to_collapse.insert(ct.tile_darr.at(rng_val));
 	//printout("testificate\n");
@@ -172,7 +173,7 @@ auto Wfc::_calc_collapse_temps(
 	const PotElem& pot_elem = potential().at(pos.y).at(pos.x);
 
 	//std::vector<double> weight_darr;
-	//std::unordered_map<u32, size_t> tid_umap;
+	//std::unordered_map<size_t, size_t> tid_umap;
 	if (size_t i=0; true) {
 		for (const auto& item: pot_elem) {
 			//ret.weight_darr.push_back(weight_umap().at(item.first));
@@ -190,7 +191,7 @@ auto Wfc::_calc_collapse_temps(
 	return ret;
 }
 double Wfc::_calc_modded_weight(
-	const Vec2<size_t>& pos, const u32& item
+	const Vec2<size_t>& pos, const size_t& item
 ) const {
 	double ret = 0.0;
 
@@ -338,10 +339,10 @@ void Wfc::_add_constraint(
 
 	PotElem to_erase_uset;
 
-	for (const u32& other_tile: nb_pot_elem) {
+	for (const size_t& other_tile: nb_pot_elem) {
 		bool found = false;
-		//for (const u32& curr_tile: ct.tile_darr)
-		for (const u32& curr_tile: tiles) {
+		//for (const size_t& curr_tile: ct.tile_darr)
+		for (const size_t& curr_tile: tiles) {
 			if (
 				//rule_uset().contains(Rule
 				//	{.t0=curr_tile, .t1=other_tile, .d=neighbor.d})
@@ -361,7 +362,7 @@ void Wfc::_add_constraint(
 			needs_update.push(neighbor.pos);
 		}
 	}
-	for (const u32& to_erase_tile: to_erase_uset) {
+	for (const size_t& to_erase_tile: to_erase_uset) {
 		nb_pot_elem.erase(to_erase_tile);
 	}
 
