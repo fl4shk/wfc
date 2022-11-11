@@ -10,21 +10,22 @@ int main(int argc, char** argv) {
 	//	exit(1);
 	//}
 	ArgParser ap;
-	ap.add("--input-file", "-i", HasArg::Req, true);
-	ap.add("--width", "-w", HasArg::Req, true);
-	ap.add("--height", "-h", HasArg::Req, true);
-	ap.add("--tile-dim", "-d", HasArg::Req, false);
-	ap.add("--rotate", "-r", HasArg::None, false);
-	ap.add("--overlap", "-o", HasArg::None, false);
-	ap.add("--seed", "-s", HasArg::Req, false);
-	if (auto fail=ap.parse(argc, argv); fail) {
-		printerr("Error: invalid arguments\n");
+	ap.add("--input-file", "-i", HasArg::Req, true, true);
+	ap.add("--width", "-w", HasArg::Req, true, true);
+	ap.add("--height", "-h", HasArg::Req, true, true);
+	ap.add("--tile-dim", "-d", HasArg::Req, false, true);
+	ap.add("--rotate", "-r", HasArg::None, false, true);
+	ap.add("--overlap", "-o", HasArg::None, false, true);
+	ap.add("--seed", "-s", HasArg::Req, false, true);
+	if (const auto& ap_ret=ap.parse(argc, argv); ap_ret.fail()) {
+		//printerr("Error: invalid arguments\n");
+		printerr(ap.help_msg(argc, argv));
 		exit(1);
 	}
 
 	std::vector<std::vector<u32>> input_tiles;
 	if (
-		std::fstream file(*ap.at("-i").val, std::ios_base::in);
+		std::fstream file(ap.at("-i", 0).val, std::ios_base::in);
 		file.is_open()
 	) {
 		while (!file.eof()) {
@@ -37,7 +38,7 @@ int main(int argc, char** argv) {
 			) {
 				printerr
 					("Input file ",
-					"\"", *ap.at("-i").val, "\" "
+					"\"", ap.at("-i", 0).val, "\" "
 					"has difference in line sizes ",
 					"(found first instance at line numbers ",
 						"[", input_tiles.size(), ", ",
@@ -46,7 +47,7 @@ int main(int argc, char** argv) {
 				exit(1);
 			} else if (line.size() == 0) {
 				printerr("Input file ",
-					"\"", *ap.at("-i").val, "\" "
+					"\"", ap.at("-i", 0).val, "\" "
 					"has line of size 0 ",
 					"(found first instance at line number ",
 						input_tiles.size(), ")",
@@ -63,7 +64,7 @@ int main(int argc, char** argv) {
 		}
 	} else {
 		printerr("Couldn't open input file ",
-			"\"", *ap.at("-i").val, "\" ",
+			"\"", ap.at("-i", 0).val, "\" ",
 			"for reading.\n");
 		exit(1);
 	}
@@ -77,12 +78,12 @@ int main(int argc, char** argv) {
 		MAX_OUTPUT_DIM = 32;
 
 	Vec2<size_t> size_2d;
-	inv_sconcat(*ap.at("-w").val, size_2d.x);
+	inv_sconcat(ap.at("-w", 0).val, size_2d.x);
 	if (size_2d.x < MIN_OUTPUT_DIM || size_2d.x > MAX_OUTPUT_DIM) {
 		printerr("`width` (", size_2d.x, ") must be in the ",
 			"range [", MIN_OUTPUT_DIM, ", ", MAX_OUTPUT_DIM, "]\n");
 	}
-	inv_sconcat(*ap.at("-h").val, size_2d.y);
+	inv_sconcat(ap.at("-h", 0).val, size_2d.y);
 	if (size_2d.y < MIN_OUTPUT_DIM || size_2d.y > MAX_OUTPUT_DIM) {
 		printerr("`height` (", size_2d.y, ") must be in the ",
 			"range [", MIN_OUTPUT_DIM, ", ", MAX_OUTPUT_DIM, "]\n");
@@ -91,7 +92,7 @@ int main(int argc, char** argv) {
 	Vec2<size_t> mt_size_2d(1, 1);
 	if (ap.has_opts("-d")) {
 		size_t tile_dim;
-		inv_sconcat(*ap.at("-d").val, tile_dim);
+		inv_sconcat(ap.at("-d", 0).val, tile_dim);
 		mt_size_2d = {.x=tile_dim, .y=tile_dim};
 	}
 
@@ -99,19 +100,19 @@ int main(int argc, char** argv) {
 		rotate = ap.has_opts("-r"),
 		overlap = ap.has_opts("-o");
 
-	u64 seed;
+	u64 rng_seed;
 
 	if (!ap.has_opts("-s")) {
-		seed = get_hrc_now_rng_seed();
+		rng_seed = get_hrc_now_rng_seed();
 	} else {
-		inv_sconcat(*ap.at("-s").val, seed);
+		inv_sconcat(ap.at("-s", 0).val, rng_seed);
 	}
 
 	wfc::Wfc the_wfc
 		(size_2d, mt_size_2d,
 		input_tiles,
 		rotate, overlap,
-		seed);
+		rng_seed);
 	for (size_t j=0; j<the_wfc.potential().size(); ++j) {
 		const auto& row = the_wfc.potential().at(j);
 		//printout(j, ": ");
