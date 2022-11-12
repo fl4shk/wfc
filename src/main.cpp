@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 		.add_singleton("--metatile-dim", "-d", HasArg::Req, false)
 		.add_singleton("--no-rotate", "-r", HasArg::None, false)
 		.add_singleton("--no-reflect", "-R", HasArg::None, false)
-		.add_singleton("--no-overlap", "-o", HasArg::None, false)
+		//.add_singleton("--no-overlap", "-o", HasArg::None, false)
 		.add_singleton("--seed", "-s", HasArg::Req, false);
 	if (const auto& ap_ret=ap.parse(argc, argv); ap_ret.fail()) {
 		//printerr("Error: invalid arguments\n");
@@ -124,8 +124,8 @@ int main(int argc, char** argv) {
 
 	const bool
 		no_rotate = ap.has_opts("--no-rotate"),
-		no_reflect = ap.has_opts("--no-reflect"),
-		no_overlap = ap.has_opts("--no-overlap");
+		no_reflect = ap.has_opts("--no-reflect");
+		//no_overlap = ap.has_opts("--no-overlap");
 
 	u64 rng_seed;
 
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
 	wfc::Wfc the_wfc
 		(size_2d, mt_dim,
 		input_tiles,
-		no_rotate, no_reflect, no_overlap,
+		no_rotate, no_reflect, //no_overlap,
 		rng_seed);
 	for (size_t j=0; j<the_wfc.potential().size(); ++j) {
 		const auto& row = the_wfc.potential().at(j);

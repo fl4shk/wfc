@@ -9,7 +9,7 @@ Wfc::Wfc() {}
 Wfc::Wfc(
 	const Vec2<size_t>& s_size_2d, size_t s_mt_dim,
 	const std::vector<std::vector<size_t>>& input_tiles,
-	bool s_no_rotate, bool s_no_reflect, bool s_no_overlap,
+	bool s_no_rotate, bool s_no_reflect, //bool s_no_overlap,
 	u64 s_rng_seed
 ) 
 	: _size_2d(s_size_2d),
@@ -18,7 +18,7 @@ Wfc::Wfc(
 	//	std::vector<TileUset>(s_size_2d.x, TileUset())),
 	_no_rotate(s_no_rotate),
 	_no_reflect(s_no_reflect),
-	_no_overlap(s_no_overlap),
+	//_no_overlap(s_no_overlap),
 	_rng(s_rng_seed) {
 	//--------
 	if (mt_dim() > size_2d().x) {
@@ -45,12 +45,39 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	_potential.clear();
 	//_rules_umap.clear();
 	//_rule_uset.clear();
+	_mt_darr.clear();
 	_r2w_umap.clear();
 	_weight_umap.clear();
 
 	PotElem pot_elem;
 
 	// Insert metatiles
+	if (std::unordered_set<Metatile> mt_uset; true) {
+		auto traverse = [&](size_t j, size_t i) -> Metatile {
+			Metatile ret(mt_dim());
+
+			Vec2<size_t>
+				loc_pos, pos;
+			for (loc_pos.y=0; loc_pos.y<mt_dim(); ++loc_pos.y) {
+				for (loc_pos.x=0; loc_pos.x<mt_dim(); ++loc_pos.x) {
+					pos.y = (loc_pos.y + j) % input_tiles.size();
+					pos.x = (loc_pos.x + i) % input_tiles.at(j).size();
+					ret.at(loc_pos) = input_tiles.at(pos.y).at(pos.x);
+				}
+			}
+
+			return ret;
+		};
+		for (size_t j=0; j<input_tiles.size(); ++j) {
+			const auto& row = input_tiles.at(j);
+			for (size_t i=0; i<row.size(); ++i) {
+				mt_uset.insert(traverse(j, i));
+			}
+		}
+		for (const auto& item: mt_uset) {
+			_mt_darr.push_back(item);
+		}
+	}
 
 	// Insert weights
 	auto insert_weight = [&](const size_t& item) -> void {
@@ -65,8 +92,8 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 			_weight_umap.insert(std::pair(item, 1.0));
 		}
 	};
-	//for (const auto& item: metatile_darr()) 
-	for (size_t i=0; i<metatile_darr().size(); ++i) {
+	//for (const auto& item: mt_darr()) 
+	for (size_t i=0; i<mt_darr().size(); ++i) {
 		insert_weight(i);
 	}
 	//printout("Inserting weights\n");
@@ -81,6 +108,21 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 		std::vector<PotElem>(size_2d().x, pot_elem));
 
 	// Insert `Rule`s
+	auto insert_rule = [&](const Rule& rule) -> void {
+		//printout("in insert_rule():\n");
+		//if (!rule_uset().contains(rule))
+		if (!r2w_umap().contains(rule)) {
+			//_rule_uset.insert(rule);
+			_r2w_umap.insert(std::pair(rule, 1.0));
+		} else { // if (r2w_umap().contains(rule))
+			_r2w_umap.at(rule) += 1.0;
+		}
+	};
+	for (const auto& item_a: mt_darr()) {
+		for (const auto& item_b: mt_darr()) {
+			
+		}
+	}
 	//for (i32 j=0; j<i32(input_tiles.size()); ++j) {
 	//	const auto& row = input_tiles.at(j);
 	//	for (i32 i=0; i<i32(row.size()); ++i) {
