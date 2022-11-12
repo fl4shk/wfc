@@ -42,7 +42,9 @@ Wfc::~Wfc() {}
 void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	//--------
 	//_tprops_umap.clear();
-	_potential.clear();
+	//Potential potential;
+	_result.clear();
+	//_potential.clear();
 	//_rules_umap.clear();
 	//_rule_uset.clear();
 	_mt_darr.clear();
@@ -76,45 +78,45 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 			}
 		}
 
-		//if (std::unordered_set<Metatile> ext_mt_uset; true) {
-		//	for (const auto& item: mt_uset) {
-		//		if (!no_reflect()) {
-		//			ext_mt_uset.insert(Metatile(item).reflect_x());
-		//			ext_mt_uset.insert(Metatile(item).reflect_y());
-		//			ext_mt_uset.insert
-		//				(Metatile(item).reflect_x().reflect_y());
-		//		}
-		//		if (!no_rotate()) {
-		//			auto rot90 = Metatile(item).rotate_p90();
-		//			ext_mt_uset.insert(rot90);
-		//			if (!no_reflect()) {
-		//				ext_mt_uset.insert(Metatile(rot90).reflect_x());
-		//				ext_mt_uset.insert(Metatile(rot90).reflect_y());
-		//				ext_mt_uset.insert
-		//					(Metatile(rot90).reflect_x().reflect_y());
-		//			}
+		if (std::unordered_set<Metatile> ext_mt_uset; true) {
+			for (const auto& item: mt_uset) {
+				if (!no_reflect()) {
+					ext_mt_uset.insert(Metatile(item).reflect_x());
+					ext_mt_uset.insert(Metatile(item).reflect_y());
+					ext_mt_uset.insert
+						(Metatile(item).reflect_x().reflect_y());
+				}
+				if (!no_rotate()) {
+					auto rot90 = Metatile(item).rotate_p90();
+					ext_mt_uset.insert(rot90);
+					if (!no_reflect()) {
+						ext_mt_uset.insert(Metatile(rot90).reflect_x());
+						ext_mt_uset.insert(Metatile(rot90).reflect_y());
+						ext_mt_uset.insert
+							(Metatile(rot90).reflect_x().reflect_y());
+					}
 
-		//			auto rot180 = Metatile(rot90).rotate_p90();
-		//			ext_mt_uset.insert(rot180);
-		//			if (!no_reflect()) {
-		//				ext_mt_uset.insert(Metatile(rot180).reflect_x());
-		//				ext_mt_uset.insert(Metatile(rot180).reflect_y());
-		//				ext_mt_uset.insert
-		//					(Metatile(rot180).reflect_x().reflect_y());
-		//			}
+					auto rot180 = Metatile(rot90).rotate_p90();
+					ext_mt_uset.insert(rot180);
+					if (!no_reflect()) {
+						ext_mt_uset.insert(Metatile(rot180).reflect_x());
+						ext_mt_uset.insert(Metatile(rot180).reflect_y());
+						ext_mt_uset.insert
+							(Metatile(rot180).reflect_x().reflect_y());
+					}
 
-		//			auto rot270 = Metatile(rot180).rotate_p90();
-		//			ext_mt_uset.insert(rot270);
-		//			if (!no_reflect()) {
-		//				ext_mt_uset.insert(Metatile(rot270).reflect_x());
-		//				ext_mt_uset.insert(Metatile(rot270).reflect_y());
-		//				ext_mt_uset.insert
-		//					(Metatile(rot270).reflect_x().reflect_y());
-		//			}
-		//		}
-		//	}
-		//	mt_uset.merge(std::move(ext_mt_uset));
-		//}
+					auto rot270 = Metatile(rot180).rotate_p90();
+					ext_mt_uset.insert(rot270);
+					if (!no_reflect()) {
+						ext_mt_uset.insert(Metatile(rot270).reflect_x());
+						ext_mt_uset.insert(Metatile(rot270).reflect_y());
+						ext_mt_uset.insert
+							(Metatile(rot270).reflect_x().reflect_y());
+					}
+				}
+			}
+			mt_uset.merge(std::move(ext_mt_uset));
+		}
 
 		for (const auto& item: mt_uset) {
 			_mt_darr.push_back(item);
@@ -146,8 +148,9 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	//		insert_weight(row.at(i);
 	//	}
 	//}
-	_potential = Potential(size_2d().y,
+	_result = Potential(size_2d().y,
 		std::vector<PotElem>(size_2d().x, pot_elem));
+	//_potential_darr_stk.push({std::move(potential)});
 
 	// Insert `Rule`s
 	auto insert_rule = [&](const Rule& rule) -> void {
@@ -285,55 +288,96 @@ void Wfc::_gen() {
 	//	_dbg_print();
 	//	//printout("\n");
 	//} while (_gen_iteration());
-	while (_gen_iteration()) {
-	}
-	_post_process();
+
+	//for (;;) {
+	//	BaktkStkItem to_push;
+	//	to_push.least_entropy_pos_darr = _calc_least_entropy_pos_darr();
+	//	if (!to_push.least_entropy_pos_darr) {
+	//		break;
+	//	}
+
+	//	_baktk_stk.push(std::move(to_push));
+	//	const size_t size = _baktk_stk.size();
+	//	//while (_baktk_stk.size() == size)
+	//	//if (_gen_iteration()) {
+	//	//	//_baktk_stk.pop();
+	//	//}
+	//};
+
+	//_post_process();
 }
 
-void Wfc::_post_process() {
+//void Wfc::_post_process() {
+//}
+bool Wfc::_backtrack(size_t index) {
+	return true;
 }
 
-bool Wfc::_gen_iteration() {
-	// Do a copy
-	//Potential ret = old_potential;
+auto Wfc::_backtrack_iteration(
+	//std::vector<Vec2<size_t>>& least_entropy_pos_darr,
+	//size_t to_collapse_pos_index,
+	const Vec2<size_t>& to_collapse_pos,
+	//size_t pot_index
+	Potential& potential
+) -> std::optional<Potential> {
+	//auto to_collapse_pos = _rand_pos_w_least_entropy();
+	//Potential potential(_potential_darr_stk.top().at(pot_index));
 
-	auto to_collapse_pos = _rand_pos_w_least_entropy();
-	if (!to_collapse_pos) {
-		return false;
-	}
-	auto& to_collapse
-		= _potential.at(to_collapse_pos->y).at(to_collapse_pos->x);
-
-	// The below commented-out `if` statement should never occur because we
-	// do this check in `_rand_pos_w_least_entropy()`.
-	//if (to_collapse.size() == 0) {
+	//auto least_entropy_pos_darr = _calc_least_entropy_pos_darr();
+	//if (!least_entropy_pos_darr) {
 	//	return std::nullopt;
 	//}
+	//auto& bt_item = _baktk_stk.top();
 
-	//const std::vector<Vec2<size_t>>& non_zero_pos
-	//	= find_true(to_collapse);
-	const CollapseTemps ct = _calc_collapse_temps(*to_collapse_pos);
+	//const size_t to_collapse_pos_index
+	//	= rng_run<size_t>(_rng,
+	//		size_t(0),
+	//		least_entropy_pos_darr.size() - 1)
+
+	//const Vec2<size_t>& to_collapse_pos
+	//	= least_entropy_pos_darr.at(to_collapse_pos_index);
+	auto& to_collapse
+		= potential.at(to_collapse_pos.y).at(to_collapse_pos.x);
+
+	// The below commented-out `if` statement should never occur
+	// because we do this check in `_rand_pos_w_least_entropy()`.
+	if (to_collapse.size() == 0) {
+		return std::nullopt;
+	}
+
+	const CollapseTemps ct = _calc_collapse_temps
+		(potential, to_collapse_pos);
 	//Ddist ddist(ct.weight_darr.begin(), ct.weight_darr.end());
 	Ddist ddist(ct.modded_weight_darr.begin(),
 		ct.modded_weight_darr.end());
 	to_collapse.clear();
-	const auto rng_val = ddist(_rng);
-	//const size_t* tile = &ct.tile_darr.at(rng_val);
-	//to_collapse.at(ct.tile_darr.at(rng_val)) = true;
+
+	const auto& rng_val = ddist(_rng);
 	to_collapse.insert(ct.tile_darr.at(rng_val));
-	//printout("testificate\n");
-	_propagate(*to_collapse_pos);
-	return true;
+
+	try {
+		_propagate(potential, to_collapse_pos);
+		return potential;
+	} catch (const std::exception& e) {
+		return std::nullopt;
+	}
+
+	//return true;
 }
+//bool Wfc::_gen_inner_iteration() {
+//}
+//bool Wfc::_inner_gen_iteration() {
+//}
 auto Wfc::_calc_collapse_temps(
 	//const Vec2<size_t>& pos
 	//const PotElem& pot_elem
+	const Potential& potential,
 	const Vec2<size_t>& pos
 ) const -> CollapseTemps {
 	//WeightsAndTileIds ret;
 	CollapseTemps ret;
 	ret.pos = pos;
-	const PotElem& pot_elem = potential().at(pos.y).at(pos.x);
+	const PotElem& pot_elem = potential.at(pos.y).at(pos.x);
 
 	//std::vector<double> weight_darr;
 	//std::unordered_map<size_t, size_t> tid_umap;
@@ -344,7 +388,7 @@ auto Wfc::_calc_collapse_temps(
 			//ret.tid_umap.insert(std::pair(item.first, i));
 			//ret.weight_darr.push_back(weight_umap().at(item));
 			ret.modded_weight_darr.push_back(_calc_modded_weight
-				(pos, item));
+				(potential, pos, item));
 			ret.tile_darr.push_back(item);
 			ret.tid_umap.insert(std::pair(item, i));
 			++i;
@@ -354,6 +398,7 @@ auto Wfc::_calc_collapse_temps(
 	return ret;
 }
 double Wfc::_calc_modded_weight(
+	const Potential& potential,
 	const Vec2<size_t>& pos, const size_t& item
 ) const {
 	double ret = 0.0;
@@ -367,7 +412,7 @@ double Wfc::_calc_modded_weight(
 		if (r2w_pair.first.t0 == item) {
 			for (const Neighbor& neighbor: neighbors) {
 				const PotElem& nb_pot_elem
-					= potential().at(neighbor.pos.y).at(neighbor.pos.x);
+					= potential.at(neighbor.pos.y).at(neighbor.pos.x);
 				if (
 					nb_pot_elem.size() == 1
 					&& r2w_pair.first.t1 == *nb_pot_elem.begin()
@@ -381,7 +426,7 @@ double Wfc::_calc_modded_weight(
 		} else if (r2w_pair.first.t1 == item) {
 			for (const Neighbor& neighbor: neighbors) {
 				const PotElem& nb_pot_elem
-					= potential().at(neighbor.pos.y).at(neighbor.pos.x);
+					= potential.at(neighbor.pos.y).at(neighbor.pos.x);
 				if (
 					nb_pot_elem.size() == 1
 					&& r2w_pair.first.t0 == *nb_pot_elem.begin()
@@ -399,24 +444,28 @@ double Wfc::_calc_modded_weight(
 	}
 	return ret;
 }
-std::optional<Vec2<size_t>> Wfc::_rand_pos_w_least_entropy() {
+std::optional<std::vector<Vec2<size_t>>>
+Wfc::_calc_least_entropy_pos_darr(
+	const Potential& potential
+) {
 	std::optional<double> entropy = std::nullopt;
-	std::vector<Vec2<size_t>> lowest_entropy_darr;
+	std::vector<Vec2<size_t>> least_entropy_darr;
 
 	Vec2<size_t> pos;
-	//printout("Wfc::_rand_pos_w_least_entropy(): computing...\n");
+	//printout("Wfc::_calc_least_entropy_pos_darr(): computing...\n");
 	for (pos.y=0; pos.y<size_2d().y; ++pos.y) {
 		for (pos.x=0; pos.x<size_2d().x; ++pos.x) {
-			const auto& tiles = potential().at(pos.y).at(pos.x);
+			const auto& tiles = potential.at(pos.y).at(pos.x);
 			//const CollapseTemps ct = _calc_collapse_temps(pos);
 			//if (ct.tile_darr.size() == 0)
 			if (tiles.size() == 0) {
 				// We've failed the generation at this point.
 				//_dbg_print();
 				//sleep(1);
-				throw std::runtime_error(sconcat
-					("Wfc::_rand_pos_w_least_entropy(): ",
-					"potential at position ", pos, " has zero tiles!"));
+				//throw std::runtime_error(sconcat
+				//	("Wfc::_calc_least_entropy_pos_darr(): ",
+				//	"potential at position ", pos, " has zero tiles!"));
+				return std::nullopt;
 			}
 			//else if (ct.tile_darr.size() == 1)
 			else if (tiles.size() == 1) {
@@ -435,37 +484,39 @@ std::optional<Vec2<size_t>> Wfc::_rand_pos_w_least_entropy() {
 			}
 			//temp_entropy = -temp_entropy;
 			//printout(temp_entropy, " ");
-			if (lowest_entropy_darr.size() == 0) {
+			if (least_entropy_darr.size() == 0) {
 				entropy = temp_entropy;
-				lowest_entropy_darr.push_back(pos);
-			} else { // if (lowest_entropy_darr.size() > 0)
+				least_entropy_darr.push_back(pos);
+			} else { // if (least_entropy_darr.size() > 0)
 				if (temp_entropy < *entropy) {
 					entropy = temp_entropy;
-					lowest_entropy_darr.clear();
+					least_entropy_darr.clear();
 				}
-				lowest_entropy_darr.push_back(pos);
+				least_entropy_darr.push_back(pos);
 			}
 		}
 		//printout("\n");
 	}
 	if (entropy) {
 		// Break ties at random
-		//printout("Wfc::_rand_pos_w_least_entropy(): ");
-		//for (const auto& entropy: lowest_entropy_darr) {
+		//printout("Wfc::_calc_least_entropy_pos_darr(): ");
+		//for (const auto& entropy: least_entropy_darr) {
 		//	printout(entropy, " ");
 		//}
 		//printout("\n");
-		return lowest_entropy_darr.at
-			(rng_run<size_t>(_rng,
-				size_t(0), lowest_entropy_darr.size() - 1));
+		//return least_entropy_darr.at
+		//	(rng_run<size_t>(_rng,
+		//		size_t(0), least_entropy_darr.size() - 1));
+		return least_entropy_darr;
 	} else {
-		//printout("Wfc::_rand_pos_w_least_entropy(): ",
+		//printout("Wfc::_calc_least_entropy_pos_darr(): ",
 		//	"Returning `std::nullopt`.\n");
 		return std::nullopt;
 	}
 	//std::sort(entropy_darr.begin(), entropy_darr.end());
 }
 void Wfc::_propagate(
+	Potential& potential,
 	const Vec2<size_t>& start_pos
 ) {
 	std::queue<Vec2<size_t>> needs_update;
@@ -481,24 +532,24 @@ void Wfc::_propagate(
 			needs_update.pop();
 			const std::vector<Neighbor>& neighbors = _neighbors(pos);
 			for (const auto& neighbor: neighbors) {
-				_add_constraint(pos, neighbor, needs_update);
+				_add_constraint(potential, pos, neighbor,
+					needs_update);
 			}
 		}
 	}
 }
 void Wfc::_add_constraint(
+	Potential& potential,
 	const Vec2<size_t>& pos,
 
 	// `neighbor` stores the incoming `Dir`, and the outgoing `Dir` can be
 	// computed with `reverse()`
 	const Neighbor& neighbor,
-	//const CollapseTemps& ct
-	//std::stack<Vec2<size_t>>& needs_update
 	std::queue<Vec2<size_t>>& needs_update
 ) {
 	PotElem& nb_pot_elem
-		= _potential.at(neighbor.pos.y).at(neighbor.pos.x);
-	const PotElem& tiles = potential().at(pos.y).at(pos.x);
+		= potential.at(neighbor.pos.y).at(neighbor.pos.x);
+	const PotElem& tiles = potential.at(pos.y).at(pos.x);
 
 	PotElem to_erase_uset;
 

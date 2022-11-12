@@ -143,8 +143,8 @@ int main(int argc, char** argv) {
 		input_tiles,
 		no_rotate, no_reflect, //no_overlap,
 		rng_seed);
-	for (size_t j=0; j<the_wfc.potential().size(); ++j) {
-		const auto& row = the_wfc.potential().at(j);
+	for (size_t j=0; j<the_wfc.result().size(); ++j) {
+		const auto& row = the_wfc.result().at(j);
 		//printout(j, ": ");
 		for (size_t i=0; i<row.size(); ++i) {
 			const auto& uset = row.at(i);

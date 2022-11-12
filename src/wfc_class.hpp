@@ -44,8 +44,32 @@ public:		// types
 	//	RuleUset rule_uset;
 	//	double weight;
 	//};
+	//class Action final {
+	//public:		// variables
+	//	PotElem pot_elem;
+	//	Vec2<size_t> pos;
+	//};
+	//class BaktkState final {
+	//public:		// variables
+	//	Vec2<size_t> pos;
+	//	//Potential potential;
+	//	PotElem pot_elem;
+	//};
+	//class BaktkStkItem final {
+	//public:		// variables
+	//	std::vector<Vec2<size_t>> least_entropy_pos_darr;
+
+	//	//BaktkState prev_state;
+	//	// states to try
+	//	//std::vector<BaktkState> next_state_darr; 
+	//	std::unordered_map<Vec2<size_t>, BaktkState> next_state_umap;
+	//};
+	//class BaktkTree final {
+	//};
 private:		// variables
-	Potential _potential;
+	Potential _result;
+	//std::stack<std::vector<Potential>> _potential_darr_stk;
+	//std::stack<BaktkStkItem> _baktk_stk; // for backtracking
 	Vec2<size_t>
 		_size_2d;
 	size_t 
@@ -80,7 +104,7 @@ public:		// functions
 	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(Wfc);
 	~Wfc();
 
-	GEN_GETTER_BY_CON_REF(potential);
+	GEN_GETTER_BY_CON_REF(result);
 	GEN_GETTER_BY_CON_REF(size_2d);
 	GEN_GETTER_BY_CON_REF(mt_dim);
 	//GEN_GETTER_BY_CON_REF(rules_umap);
@@ -95,9 +119,19 @@ public:		// functions
 private:		// functions
 	void _learn(const std::vector<std::vector<size_t>>& input_tiles);
 	void _gen();
-	void _post_process();
+	//void _post_process();
 	//--------
-	bool _gen_iteration();
+	//bool _gen_outer_iteration();
+	//bool _gen_inner_iteration();
+	bool _backtrack(size_t index);
+	std::optional<Potential> _backtrack_iteration(
+		//std::vector<Vec2<size_t>>& least_entropy_pos_darr,
+		//size_t to_collapse_pos_index,
+		const Vec2<size_t>& to_collapse_pos,
+		//size_t pot_index
+		Potential& potential
+	);
+	//bool _inner_gen_iteration();
 	class CollapseTemps final {
 	public:		// variables
 		Vec2<size_t> pos;
@@ -108,13 +142,19 @@ private:		// functions
 		std::unordered_map<size_t, size_t> tid_umap;
 	};
 	CollapseTemps _calc_collapse_temps(
+		const Potential& potential,
 		const Vec2<size_t>& pos
 	) const;
 	double _calc_modded_weight(
+		const Potential& potential,
 		const Vec2<size_t>& pos, const size_t& item
 	) const;
 	//--------
-	std::optional<Vec2<size_t>> _rand_pos_w_least_entropy();
+	//std::optional<Vec2<size_t>> _rand_pos_w_least_entropy();
+	std::optional<std::vector<Vec2<size_t>>>
+	_calc_least_entropy_pos_darr(
+		const Potential& potential
+	);
 	//--------
 	//using Neighbor = std::pair<Dir, Vec2<size_t>>;
 	class Neighbor final {
@@ -125,10 +165,11 @@ private:		// functions
 	};
 	//--------
 	void _propagate(
-		const Vec2<size_t>& start_pos//,
-		//const CollapseTemps& ct
+		Potential& potential,
+		const Vec2<size_t>& start_pos
 	);
 	void _add_constraint(
+		Potential& potential,
 		const Vec2<size_t>& pos,
 		const Neighbor& neighbor,
 		std::queue<Vec2<size_t>>& needs_update
