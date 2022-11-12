@@ -113,6 +113,7 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 					}
 				}
 			}
+			mt_uset.merge(std::move(ext_mt_uset));
 		}
 
 		for (const auto& item: mt_uset) {
