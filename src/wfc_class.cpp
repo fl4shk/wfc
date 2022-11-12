@@ -303,31 +303,25 @@ void Wfc::_gen() {
 	//	//	//_baktk_stk.pop();
 	//	//}
 	//};
+	_backtrack(_result);
 
 	//_post_process();
 }
 
 //void Wfc::_post_process() {
 //}
-bool Wfc::_backtrack(size_t index) {
-	return true;
-}
-
-auto Wfc::_backtrack_iteration(
-	//std::vector<Vec2<size_t>>& least_entropy_pos_darr,
-	//size_t to_collapse_pos_index,
-	const Vec2<size_t>& to_collapse_pos,
-	//size_t pot_index
-	Potential& potential
-) -> std::optional<Potential> {
-	//auto to_collapse_pos = _rand_pos_w_least_entropy();
-	//Potential potential(_potential_darr_stk.top().at(pot_index));
+bool Wfc::_backtrack(
+	Potential& potential//,
+	//size_t depth
+) {
+	//if (depth == 0) {
+	//	
+	//}
 
 	//auto least_entropy_pos_darr = _calc_least_entropy_pos_darr();
 	//if (!least_entropy_pos_darr) {
 	//	return std::nullopt;
 	//}
-	//auto& bt_item = _baktk_stk.top();
 
 	//const size_t to_collapse_pos_index
 	//	= rng_run<size_t>(_rng,
@@ -336,34 +330,124 @@ auto Wfc::_backtrack_iteration(
 
 	//const Vec2<size_t>& to_collapse_pos
 	//	= least_entropy_pos_darr.at(to_collapse_pos_index);
-	auto& to_collapse
-		= potential.at(to_collapse_pos.y).at(to_collapse_pos.x);
 
-	// The below commented-out `if` statement should never occur
-	// because we do this check in `_rand_pos_w_least_entropy()`.
-	if (to_collapse.size() == 0) {
-		return std::nullopt;
+	auto least_entropy_pos_darr = _calc_least_entropy_pos_darr(potential);
+
+	if (!least_entropy_pos_darr) {
+		return false;
 	}
 
-	const CollapseTemps ct = _calc_collapse_temps
-		(potential, to_collapse_pos);
-	//Ddist ddist(ct.weight_darr.begin(), ct.weight_darr.end());
-	Ddist ddist(ct.modded_weight_darr.begin(),
-		ct.modded_weight_darr.end());
-	to_collapse.clear();
-
-	const auto& rng_val = ddist(_rng);
-	to_collapse.insert(ct.tile_darr.at(rng_val));
-
-	try {
-		_propagate(potential, to_collapse_pos);
-		return potential;
-	} catch (const std::exception& e) {
-		return std::nullopt;
+	std::unordered_map<Vec2<size_t>, PotElem> temp_tile_umap;
+	for (const auto& pos: *least_entropy_pos_darr) {
+		temp_tile_umap.insert(std::pair
+			(pos, potential.at(pos.y).at(pos.x)));
 	}
+	//std::vector<std::pair<Vec2<size_t>, size_t>> tried_tile_darr;
 
-	//return true;
+	class NextRet final {
+	public:		// variables
+		Potential pot;
+		Vec2<size_t> tc_pos; // to collapse pos
+		size_t
+			ti, // tile index
+			le_darr_index;
+	};
+	auto next = [&]() -> std::optional<NextRet> {
+		NextRet ret
+			{.pot=potential};
+
+		ret.le_darr_index
+			= rng_run<size_t>(_rng,
+				size_t(0),
+				least_entropy_pos_darr->size() - 1);
+
+		ret.tc_pos
+			= least_entropy_pos_darr->at(ret.le_darr_index);
+
+		auto& to_collapse
+			= ret.pot.at(ret.tc_pos.y).at(ret.tc_pos.x);
+
+		if (to_collapse.size() == 0) {
+			return std::nullopt;
+		}
+
+		const CollapseTemps ct = _calc_collapse_temps(ret.pot, ret.tc_pos);
+		//Ddist ddist(ct.weight_darr.begin(), ct.weight_darr.end());
+		Ddist ddist(ct.modded_weight_darr.begin(),
+			ct.modded_weight_darr.end());
+		to_collapse.clear();
+
+		const auto& rng_val = ddist(_rng);
+		ret.ti = ct.tile_darr.at(rng_val);
+		to_collapse.insert(ret.ti);
+
+		// pretty sure this is correct
+		try {
+			_propagate(ret.pot, ret.tc_pos);
+			return ret;
+		} catch (const std::exception& e) {
+			return std::nullopt;
+		}
+	};
+
+	//while (tried_tile_umap.size() > 0) {
+	//	auto temp = next();
+	//	if (temp) {
+	//		if (_backtrack(temp->pot)) {
+	//			potential = std::move(temp->pot);
+	//			return true;
+	//		} else {
+	//			tried_tile_umap.at
+	//		}
+	//	} else {
+	//		// At this point, `_propagate()` has failed, 
+	//		return false;
+	//	}
+	//}
+	return false;
+
 }
+
+//auto Wfc::_backtrack_next(
+//	//std::vector<Vec2<size_t>>& least_entropy_pos_darr,
+//	//size_t to_collapse_pos_index,
+//	const Vec2<size_t>& to_collapse_pos,
+//	//size_t pot_index
+//	Potential& old_potential
+//) -> std::optional<Potential> {
+//	//auto to_collapse_pos = _rand_pos_w_least_entropy();
+//	//Potential potential(_potential_darr_stk.top().at(pot_index));
+//	Potential potential(old_potential);
+//
+//	auto& to_collapse
+//		= potential.at(to_collapse_pos.y).at(to_collapse_pos.x);
+//
+//	// The below commented-out `if` statement should never occur
+//	// because we do this check in `_rand_pos_w_least_entropy()`.
+//	if (to_collapse.size() == 0) {
+//		return std::nullopt;
+//	}
+//
+//	const CollapseTemps ct = _calc_collapse_temps
+//		(potential, to_collapse_pos);
+//	//Ddist ddist(ct.weight_darr.begin(), ct.weight_darr.end());
+//	Ddist ddist(ct.modded_weight_darr.begin(),
+//		ct.modded_weight_darr.end());
+//	to_collapse.clear();
+//
+//	const auto& rng_val = ddist(_rng);
+//	to_collapse.insert(ct.tile_darr.at(rng_val));
+//
+//	try {
+//		_propagate(potential, to_collapse_pos);
+//		return potential;
+//	} catch (const std::exception& e) {
+//		return std::nullopt;
+//	}
+//
+//	//return true;
+//}
+
 //bool Wfc::_gen_inner_iteration() {
 //}
 //bool Wfc::_inner_gen_iteration() {
@@ -449,7 +533,7 @@ Wfc::_calc_least_entropy_pos_darr(
 	const Potential& potential
 ) {
 	std::optional<double> entropy = std::nullopt;
-	std::vector<Vec2<size_t>> least_entropy_darr;
+	std::vector<Vec2<size_t>> least_entropy_pos_darr;
 
 	Vec2<size_t> pos;
 	//printout("Wfc::_calc_least_entropy_pos_darr(): computing...\n");
@@ -484,15 +568,15 @@ Wfc::_calc_least_entropy_pos_darr(
 			}
 			//temp_entropy = -temp_entropy;
 			//printout(temp_entropy, " ");
-			if (least_entropy_darr.size() == 0) {
+			if (least_entropy_pos_darr.size() == 0) {
 				entropy = temp_entropy;
-				least_entropy_darr.push_back(pos);
-			} else { // if (least_entropy_darr.size() > 0)
+				least_entropy_pos_darr.push_back(pos);
+			} else { // if (least_entropy_pos_darr.size() > 0)
 				if (temp_entropy < *entropy) {
 					entropy = temp_entropy;
-					least_entropy_darr.clear();
+					least_entropy_pos_darr.clear();
 				}
-				least_entropy_darr.push_back(pos);
+				least_entropy_pos_darr.push_back(pos);
 			}
 		}
 		//printout("\n");
@@ -500,14 +584,14 @@ Wfc::_calc_least_entropy_pos_darr(
 	if (entropy) {
 		// Break ties at random
 		//printout("Wfc::_calc_least_entropy_pos_darr(): ");
-		//for (const auto& entropy: least_entropy_darr) {
+		//for (const auto& entropy: least_entropy_pos_darr) {
 		//	printout(entropy, " ");
 		//}
 		//printout("\n");
-		//return least_entropy_darr.at
+		//return least_entropy_pos_darr.at
 		//	(rng_run<size_t>(_rng,
-		//		size_t(0), least_entropy_darr.size() - 1));
-		return least_entropy_darr;
+		//		size_t(0), least_entropy_pos_darr.size() - 1));
+		return least_entropy_pos_darr;
 	} else {
 		//printout("Wfc::_calc_least_entropy_pos_darr(): ",
 		//	"Returning `std::nullopt`.\n");

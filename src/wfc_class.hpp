@@ -123,14 +123,17 @@ private:		// functions
 	//--------
 	//bool _gen_outer_iteration();
 	//bool _gen_inner_iteration();
-	bool _backtrack(size_t index);
-	std::optional<Potential> _backtrack_iteration(
-		//std::vector<Vec2<size_t>>& least_entropy_pos_darr,
-		//size_t to_collapse_pos_index,
-		const Vec2<size_t>& to_collapse_pos,
-		//size_t pot_index
-		Potential& potential
+	bool _backtrack(
+		Potential& potential//,
+		//size_t depth
 	);
+	//std::optional<Potential> _backtrack_next(
+	//	//std::vector<Vec2<size_t>>& least_entropy_pos_darr,
+	//	//size_t to_collapse_pos_index,
+	//	const Vec2<size_t>& to_collapse_pos,
+	//	//size_t pot_index
+	//	const Potential& old_potential
+	//);
 	//bool _inner_gen_iteration();
 	class CollapseTemps final {
 	public:		// variables
