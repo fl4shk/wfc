@@ -76,45 +76,45 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 			}
 		}
 
-		if (std::unordered_set<Metatile> ext_mt_uset; true) {
-			for (const auto& item: mt_uset) {
-				if (!no_reflect()) {
-					ext_mt_uset.insert(Metatile(item).reflect_x());
-					ext_mt_uset.insert(Metatile(item).reflect_y());
-					ext_mt_uset.insert
-						(Metatile(item).reflect_x().reflect_y());
-				}
-				if (!no_rotate()) {
-					auto rot90 = Metatile(item).rotate_p90();
-					ext_mt_uset.insert(rot90);
-					if (!no_reflect()) {
-						ext_mt_uset.insert(Metatile(rot90).reflect_x());
-						ext_mt_uset.insert(Metatile(rot90).reflect_y());
-						ext_mt_uset.insert
-							(Metatile(rot90).reflect_x().reflect_y());
-					}
+		//if (std::unordered_set<Metatile> ext_mt_uset; true) {
+		//	for (const auto& item: mt_uset) {
+		//		if (!no_reflect()) {
+		//			ext_mt_uset.insert(Metatile(item).reflect_x());
+		//			ext_mt_uset.insert(Metatile(item).reflect_y());
+		//			ext_mt_uset.insert
+		//				(Metatile(item).reflect_x().reflect_y());
+		//		}
+		//		if (!no_rotate()) {
+		//			auto rot90 = Metatile(item).rotate_p90();
+		//			ext_mt_uset.insert(rot90);
+		//			if (!no_reflect()) {
+		//				ext_mt_uset.insert(Metatile(rot90).reflect_x());
+		//				ext_mt_uset.insert(Metatile(rot90).reflect_y());
+		//				ext_mt_uset.insert
+		//					(Metatile(rot90).reflect_x().reflect_y());
+		//			}
 
-					auto rot180 = Metatile(rot90).rotate_p90();
-					ext_mt_uset.insert(rot180);
-					if (!no_reflect()) {
-						ext_mt_uset.insert(Metatile(rot180).reflect_x());
-						ext_mt_uset.insert(Metatile(rot180).reflect_y());
-						ext_mt_uset.insert
-							(Metatile(rot180).reflect_x().reflect_y());
-					}
+		//			auto rot180 = Metatile(rot90).rotate_p90();
+		//			ext_mt_uset.insert(rot180);
+		//			if (!no_reflect()) {
+		//				ext_mt_uset.insert(Metatile(rot180).reflect_x());
+		//				ext_mt_uset.insert(Metatile(rot180).reflect_y());
+		//				ext_mt_uset.insert
+		//					(Metatile(rot180).reflect_x().reflect_y());
+		//			}
 
-					auto rot270 = Metatile(rot180).rotate_p90();
-					ext_mt_uset.insert(rot270);
-					if (!no_reflect()) {
-						ext_mt_uset.insert(Metatile(rot270).reflect_x());
-						ext_mt_uset.insert(Metatile(rot270).reflect_y());
-						ext_mt_uset.insert
-							(Metatile(rot270).reflect_x().reflect_y());
-					}
-				}
-			}
-			mt_uset.merge(std::move(ext_mt_uset));
-		}
+		//			auto rot270 = Metatile(rot180).rotate_p90();
+		//			ext_mt_uset.insert(rot270);
+		//			if (!no_reflect()) {
+		//				ext_mt_uset.insert(Metatile(rot270).reflect_x());
+		//				ext_mt_uset.insert(Metatile(rot270).reflect_y());
+		//				ext_mt_uset.insert
+		//					(Metatile(rot270).reflect_x().reflect_y());
+		//			}
+		//		}
+		//	}
+		//	mt_uset.merge(std::move(ext_mt_uset));
+		//}
 
 		for (const auto& item: mt_uset) {
 			_mt_darr.push_back(item);
