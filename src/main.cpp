@@ -152,7 +152,8 @@ int main(int argc, char** argv) {
 			}
 			//printout(i32(uset.begin()->first));
 			//printout(uset.begin()->first);
-			printout(static_cast<char>(*uset.begin()));
+			printout(static_cast<char>(the_wfc.mt_darr()
+				.at(*uset.begin()).tl_corner()));
 			//for (const auto& item: umap) {
 			//	if (item.second) {
 			//		printout(item.first);
