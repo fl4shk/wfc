@@ -7,13 +7,13 @@ namespace wfc {
 //--------
 Wfc::Wfc() {}
 Wfc::Wfc(
-	const Vec2<size_t>& s_size_2d, const Vec2<size_t>& s_mt_size_2d,
+	const Vec2<size_t>& s_size_2d, size_t s_mt_dim,
 	const std::vector<std::vector<size_t>>& input_tiles,
 	bool s_no_rotate, bool s_no_reflect, bool s_no_overlap,
 	u64 s_rng_seed
 ) 
 	: _size_2d(s_size_2d),
-	_mt_size_2d(s_mt_size_2d),
+	_mt_dim(s_mt_dim),
 	//_potential(s_size_2d.y,
 	//	std::vector<TileUset>(s_size_2d.x, TileUset())),
 	_no_rotate(s_no_rotate),
@@ -21,16 +21,16 @@ Wfc::Wfc(
 	_no_overlap(s_no_overlap),
 	_rng(s_rng_seed) {
 	//--------
-	if (mt_size_2d().x > size_2d().x) {
+	if (mt_dim() > size_2d().x) {
 		throw std::invalid_argument(sconcat
 			("Wfc::Wfc(): Error: ",
-			"_mt_size_2d.x (", mt_size_2d().x, ") is greater than ",
+			"_mt_dim (", mt_dim(), ") is greater than ",
 			"_size_2d.x (", size_2d().x, ")."));
 	}
-	if (mt_size_2d().y > size_2d().y) {
+	if (mt_dim() > size_2d().y) {
 		throw std::invalid_argument(sconcat
 			("Wfc::Wfc(): Error: ",
-			"_mt_size_2d.y (", mt_size_2d().y, ") is greater than ",
+			"_mt_dim (", mt_dim(), ") is greater than ",
 			"_size_2d.y (", size_2d().y, ")."));
 	}
 	_learn(input_tiles);
@@ -50,75 +50,85 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 
 	PotElem pot_elem;
 
-	// Insert weights first
-	//printout("Inserting weights\n");
-	for (i32 j=0; j<i32(input_tiles.size()); ++j) {
-		const auto& row = input_tiles.at(j);
-		//printout(row, "\n");
-		for (i32 i=0; i<i32(row.size()); ++i) {
-			// Insert weights, so that tiles that appear more often in
-			// `input_tiles` have a higher weight
-			const size_t& item = row.at(i);
-			pot_elem.insert(item);
-			if (weight_umap().contains(item)) {
-				//_weight_umap.at(item) += 3.0;
-				_weight_umap.at(item) += 1.0;
-			} else { // if (!weight_umap().contains(item))
-				_weight_umap.insert(std::pair(item, 1.0));
-			}
+	// Insert metatiles
+
+	// Insert weights
+	auto insert_weight = [&](const size_t& item) -> void {
+		// Insert weights, so that tiles that appear more often in
+		// `input_tiles` have a higher weight
+		//const size_t& item = row.at(i);
+		pot_elem.insert(item);
+		if (weight_umap().contains(item)) {
+			//_weight_umap.at(item) += 3.0;
+			_weight_umap.at(item) += 1.0;
+		} else { // if (!weight_umap().contains(item))
+			_weight_umap.insert(std::pair(item, 1.0));
 		}
+	};
+	//for (const auto& item: metatile_darr()) 
+	for (size_t i=0; i<metatile_darr().size(); ++i) {
+		insert_weight(i);
 	}
+	//printout("Inserting weights\n");
+	//for (i32 j=0; j<i32(input_tiles.size()); ++j) {
+	//	const auto& row = input_tiles.at(j);
+	//	//printout(row, "\n");
+	//	for (i32 i=0; i<i32(row.size()); ++i) {
+	//		insert_weight(row.at(i);
+	//	}
+	//}
 	_potential = Potential(size_2d().y,
 		std::vector<PotElem>(size_2d().x, pot_elem));
 
 	// Insert `Rule`s
-	for (i32 j=0; j<i32(input_tiles.size()); ++j) {
-		const auto& row = input_tiles.at(j);
-		for (i32 i=0; i<i32(row.size()); ++i) {
-			const auto& item = row.at(i);
-			auto insert_rule = [&](const Rule& rule) -> void {
-				//printout("in insert_rule():\n");
-				//if (!rule_uset().contains(rule))
-				if (!r2w_umap().contains(rule)) {
-					//_rule_uset.insert(rule);
-					_r2w_umap.insert(std::pair(rule, 1.0));
-				} else { // if (r2w_umap().contains(rule))
-					_r2w_umap.at(rule) += 1.0;
-				}
-			};
-			// left
-			if (i > 0) {
-				//printout("i > 0: ");
-				const Rule rule{item, row.at(i - 1), Dir::Left};
-				//const Rule rule{row.at(i - 1), item, Dir::Left};
-				insert_rule(rule);
-				insert_rule(rule.reverse());
-			}
-			// top
-			if (j > 0) {
-				//printout("j > 0: ");
-				const Rule rule{item, input_tiles.at(j - 1).at(i), 
-					Dir::Top};
-				insert_rule(rule);
-				insert_rule(rule.reverse());
-			}
-			// right
-			if (i + 1 != i32(row.size())) {
-				//printout("i + 1 != i32(row.size()): ");
-				const Rule rule{item, row.at(i + 1), Dir::Right};
-				insert_rule(rule);
-				insert_rule(rule.reverse());
-			}
-			// bottom
-			if (j + 1 != i32(input_tiles.size())) {
-				//printout("j + 1 != i32(input_tiles.size()): ");
-				const Rule rule{item, input_tiles.at(j + 1).at(i),
-					Dir::Bottom};
-				insert_rule(rule);
-				insert_rule(rule.reverse());
-			}
-		}
-	}
+	//for (i32 j=0; j<i32(input_tiles.size()); ++j) {
+	//	const auto& row = input_tiles.at(j);
+	//	for (i32 i=0; i<i32(row.size()); ++i) {
+	//		const auto& item = row.at(i);
+	//		//auto get_metatile = [&]
+	//		auto insert_rule = [&](const Rule& rule) -> void {
+	//			//printout("in insert_rule():\n");
+	//			//if (!rule_uset().contains(rule))
+	//			if (!r2w_umap().contains(rule)) {
+	//				//_rule_uset.insert(rule);
+	//				_r2w_umap.insert(std::pair(rule, 1.0));
+	//			} else { // if (r2w_umap().contains(rule))
+	//				_r2w_umap.at(rule) += 1.0;
+	//			}
+	//		};
+	//		//// left
+	//		//if (i > 0) {
+	//		//	//printout("i > 0: ");
+	//		//	const Rule rule{item, row.at(i - 1), Dir::Left};
+	//		//	//const Rule rule{row.at(i - 1), item, Dir::Left};
+	//		//	insert_rule(rule);
+	//		//	insert_rule(rule.reverse());
+	//		//}
+	//		//// top
+	//		//if (j > 0) {
+	//		//	//printout("j > 0: ");
+	//		//	const Rule rule{item, input_tiles.at(j - 1).at(i), 
+	//		//		Dir::Top};
+	//		//	insert_rule(rule);
+	//		//	insert_rule(rule.reverse());
+	//		//}
+	//		//// right
+	//		//if (i + 1 != i32(row.size())) {
+	//		//	//printout("i + 1 != i32(row.size()): ");
+	//		//	const Rule rule{item, row.at(i + 1), Dir::Right};
+	//		//	insert_rule(rule);
+	//		//	insert_rule(rule.reverse());
+	//		//}
+	//		//// bottom
+	//		//if (j + 1 != i32(input_tiles.size())) {
+	//		//	//printout("j + 1 != i32(input_tiles.size()): ");
+	//		//	const Rule rule{item, input_tiles.at(j + 1).at(i),
+	//		//		Dir::Bottom};
+	//		//	insert_rule(rule);
+	//		//	insert_rule(rule.reverse());
+	//		//}
+	//	}
+	//}
 	//--------
 }
 void Wfc::_gen() {
@@ -128,8 +138,14 @@ void Wfc::_gen() {
 	//	_dbg_print();
 	//	//printout("\n");
 	//} while (_gen_iteration());
-	while (_gen_iteration());
+	while (_gen_iteration()) {
+	}
+	_post_process();
 }
+
+void Wfc::_post_process() {
+}
+
 bool Wfc::_gen_iteration() {
 	// Do a copy
 	//Potential ret = old_potential;

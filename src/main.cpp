@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
 		.add_singleton("--input-file", "-i", HasArg::Req, true)
 		.add_singleton("--width", "-w", HasArg::Req, true)
 		.add_singleton("--height", "-h", HasArg::Req, true)
-		.add_singleton("--tile-dim", "-d", HasArg::Req, false)
+		.add_singleton("--metatile-dim", "-d", HasArg::Req, false)
 		.add_singleton("--no-rotate", "-r", HasArg::None, false)
 		.add_singleton("--no-reflect", "-R", HasArg::None, false)
 		.add_singleton("--no-overlap", "-o", HasArg::None, false)
@@ -116,11 +116,10 @@ int main(int argc, char** argv) {
 			"range [", MIN_OUTPUT_DIM, ", ", MAX_OUTPUT_DIM, "]\n");
 	}
 
-	Vec2<size_t> mt_size_2d(1, 1);
+	//Vec2<size_t> mt_size_2d(1, 1);
+	size_t mt_dim = 1;
 	if (ap.has_opts("-d")) {
-		size_t tile_dim;
-		inv_sconcat(ap.at("-d", 0).val, tile_dim);
-		mt_size_2d = {.x=tile_dim, .y=tile_dim};
+		inv_sconcat(ap.at("-d", 0).val, mt_dim);
 	}
 
 	const bool
@@ -137,7 +136,7 @@ int main(int argc, char** argv) {
 	}
 
 	wfc::Wfc the_wfc
-		(size_2d, mt_size_2d,
+		(size_2d, mt_dim,
 		input_tiles,
 		no_rotate, no_reflect, no_overlap,
 		rng_seed);

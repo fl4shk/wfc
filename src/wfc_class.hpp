@@ -5,6 +5,7 @@
 
 #include "misc_includes.hpp"
 #include "rule_class.hpp"
+#include "metatile_class.hpp"
 
 //--------
 namespace wfc {
@@ -46,8 +47,9 @@ public:		// types
 private:		// variables
 	Potential _potential;
 	Vec2<size_t>
-		_size_2d,
-		_mt_size_2d; // metatile size 2D
+		_size_2d;
+	size_t 
+		_mt_dim; // metatile dimension
 	bool
 		_no_rotate,
 		_no_reflect,
@@ -55,11 +57,13 @@ private:		// variables
 	//std::unordered_map<size_t, RuleUset> _rules_umap;
 	//RuleUset _rule_uset;
 
+	std::vector<Metatile> _metatile_darr;
+
 	// This maps rules to their weights
 	std::unordered_map<Rule, double> _r2w_umap;
 
-	std::unordered_map<size_t, double>
-		_weight_umap; // This maps tiles to their weights
+	// This maps tiles to their weights
+	std::unordered_map<size_t, double> _weight_umap;
 public:		// types
 	using Rng = pcg64;
 	using Ddist = std::discrete_distribution<u64>;
@@ -68,7 +72,7 @@ private:		// variables
 public:		// functions
 	Wfc();
 	Wfc(
-		const Vec2<size_t>& s_size_2d, const Vec2<size_t>& s_mt_size_2d,
+		const Vec2<size_t>& s_size_2d, size_t s_mt_dim,
 		const std::vector<std::vector<size_t>>& input_tiles,
 		bool s_no_rotate, bool s_no_reflect, bool s_no_overlap,
 		u64 s_rng_seed
@@ -78,18 +82,20 @@ public:		// functions
 
 	GEN_GETTER_BY_CON_REF(potential);
 	GEN_GETTER_BY_CON_REF(size_2d);
-	GEN_GETTER_BY_CON_REF(mt_size_2d);
+	GEN_GETTER_BY_CON_REF(mt_dim);
 	//GEN_GETTER_BY_CON_REF(rules_umap);
 	//GEN_GETTER_BY_CON_REF(rule_uset);
-	GEN_GETTER_BY_CON_REF(r2w_umap);
-	GEN_GETTER_BY_CON_REF(weight_umap);
-	//GEN_GETTER_BY_CON_REF(tprops_umap);
 	GEN_GETTER_BY_VAL(no_rotate);
 	GEN_GETTER_BY_VAL(no_reflect);
 	GEN_GETTER_BY_VAL(no_overlap);
+	GEN_GETTER_BY_CON_REF(metatile_darr);
+	GEN_GETTER_BY_CON_REF(r2w_umap);
+	GEN_GETTER_BY_CON_REF(weight_umap);
+	//GEN_GETTER_BY_CON_REF(tprops_umap);
 private:		// functions
 	void _learn(const std::vector<std::vector<size_t>>& input_tiles);
 	void _gen();
+	void _post_process();
 	//--------
 	bool _gen_iteration();
 	class CollapseTemps final {

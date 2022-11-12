@@ -1,4 +1,4 @@
-#include "rule_class.hpp"
+#include "metatile_class.hpp"
 
 namespace wfc {
 //--------

@@ -57,107 +57,58 @@ constexpr inline std::ostream& operator << (
 	}
 }
 
-// Rotation
-enum class Rot: u32 {
-	Deg0 = 0,
-	Deg90 = 1,
-	Deg180 = 2,
-	Deg270 = 3,
-	//Bad = 4,
-};
-
-constexpr inline std::ostream& operator << (
-	std::ostream& os, const Rot& r
-) {
-	switch (r) {
-	//--------
-	case Rot::Deg0:
-		return osprintout(os, "Rot::Deg0");
-	case Rot::Deg90:
-		return osprintout(os, "Rot::Deg90");
-	case Rot::Deg180:
-		return osprintout(os, "Rot::Deg180");
-	case Rot::Deg270:
-		return osprintout(os, "Rot::Deg270");
-	default:
-		//return osprintout(os, "Rot::Bad");
-		throw std::invalid_argument(sconcat
-			("wfc::operator << (std::ostream&, const Rot&): Error: ",
-			"unknown `Rot` ", u32(r), "."));
-	//--------
-	}
-}
-
-class Metatile final {
-private:		// variables
-	std::vector<std::vector<size_t>> _data;
-public:		// functions
-	Metatile();
-	Metatile(size_t s_dim);
-	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(Metatile);
-	~Metatile();
-
-	inline size_t dim() const {
-		return data().size();
-	}
-	inline Vec2<size_t> size_2d() const {
-		//return {.x=data().front().size(), .y=data().size()};
-		return {.x=dim(), .y=dim()};
-	}
-	inline size_t& at(const Vec2<size_t>& pos) {
-		return _data.at(pos.y).at(pos.x);
-	}
-	inline const size_t& at(const Vec2<size_t>& pos) const {
-		return _data.at(pos.y).at(pos.x);
-	}
-
-	// rotate plus 90 degrees
-	Metatile& reflect_x();
-	Metatile& reflect_y();
-	Metatile& transpose();
-	Metatile& rotate_p90();
-
-	GEN_GETTER_BY_CON_REF(data);
-};
-//--------
-} // namespace wfc
-
-namespace std {
-//--------
-template<>
-struct hash<wfc::Metatile> {
-	std::size_t operator () (const wfc::Metatile& mt) const noexcept {
-		//return std::hash<decltype(mt.data())>{}(mt.data());
-		size_t ret = liborangepower::containers::hash_va(mt.at({0, 0}));
-		Vec2<size_t> pos;
-		for (pos.y=0; pos.y<mt.dim(); ++pos.y) {
-			for (pos.x=0; pos.x<mt.dim(); ++pos.x) {
-				if (pos != Vec2<size_t>(0, 0)) {
-					ret = liborangepower::containers::hash_merge
-						(ret, mt.at(pos));
-				}
-			}
-		}
-		return ret;
-	}
-};
-//--------
-}
-
-namespace wfc {
+//// Rotation
+//enum class Rot: u32 {
+//	Deg0 = 0,
+//	Deg90 = 1,
+//	Deg180 = 2,
+//	Deg270 = 3,
+//	//Bad = 4,
+//};
+//
+//constexpr inline std::ostream& operator << (
+//	std::ostream& os, const Rot& r
+//) {
+//	switch (r) {
+//	//--------
+//	case Rot::Deg0:
+//		return osprintout(os, "Rot::Deg0");
+//	case Rot::Deg90:
+//		return osprintout(os, "Rot::Deg90");
+//	case Rot::Deg180:
+//		return osprintout(os, "Rot::Deg180");
+//	case Rot::Deg270:
+//		return osprintout(os, "Rot::Deg270");
+//	default:
+//		//return osprintout(os, "Rot::Bad");
+//		throw std::invalid_argument(sconcat
+//			("wfc::operator << (std::ostream&, const Rot&): Error: ",
+//			"unknown `Rot` ", u32(r), "."));
+//	//--------
+//	}
+//}
 //--------
 class Rule final {
 public:		// variables
-	size_t t0, t1; // tiles
-	//Metatile t0, t1;
+	size_t t0, t1; // tile indices
+	//Metatile mt0, mt1;
 	Dir d; // direction
 public:		// functions
 	constexpr inline auto operator <=> (
 		const Rule& to_cmp
 	) const = default;
+
+	//inline const size_t& t0() const {
+	//	return mt0.tl_corner();
+	//}
+	//inline const size_t& t1() const {
+	//	return mt1.tl_corner();
+	//}
+
 	constexpr inline Rule reverse() const {
 		Rule ret = *this;
 		std::swap(ret.t0, ret.t1);
+		//std::swap(ret.mt0, ret.mt1);
 		ret.d = wfc::reverse(ret.d);
 		//return Rule{.t0=t1, .t1=t0, .d=::reverse(d)};
 		return ret;
@@ -185,6 +136,7 @@ template<>
 struct hash<wfc::Rule> {
 	std::size_t operator () (const wfc::Rule& key) const noexcept {
 		return hash_va(key.t0, key.t1, key.d);
+		//return hash_va(key.mt0, key.mt1, key.d);
 	}
 };
 //--------
