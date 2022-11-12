@@ -42,7 +42,10 @@ int main(int argc, char** argv) {
 		.add_singleton("--no-reflect", "-R", HasArg::None, false)
 		//.add_singleton("--no-overlap", "-o", HasArg::None, false)
 		.add_singleton("--seed", "-s", HasArg::Req, false);
-	if (const auto& ap_ret=ap.parse(argc, argv); ap_ret.fail()) {
+	if (
+		const auto& ap_ret=ap.parse(argc, argv);
+		ap_ret.fail() || ap_ret.index != argc
+	) {
 		//printerr("Error: invalid arguments\n");
 		printerr(ap.help_msg(argc, argv));
 		exit(1);
