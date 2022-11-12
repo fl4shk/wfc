@@ -160,9 +160,72 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 			_r2w_umap.at(rule) += 1.0;
 		}
 	};
-	for (const auto& item_a: mt_darr()) {
-		for (const auto& item_b: mt_darr()) {
-			
+	auto mt_compatible = [this](size_t j, size_t i, Dir d) -> bool {
+		const Metatile
+			& item_j = mt_darr().at(j),
+			& item_i = mt_darr().at(i);
+
+		Vec2<size_t>
+			offset_j{0, 0},
+			offset_i{0, 0},
+			offset_size_2d{0, 0};
+
+		switch (d) {
+		//--------
+		case Dir::Left:
+			offset_i = offset_size_2d = {1, 0};
+			break;
+		case Dir::Top:
+			offset_i = offset_size_2d = {0, 1};
+			break;
+		case Dir::Right:
+			offset_j = offset_size_2d = {1, 0};
+			break;
+		case Dir::Bottom:
+			offset_j = offset_size_2d = {0, 1};
+			break;
+		default:
+			break;
+		//--------
+		}
+
+		Vec2<size_t> loc_pos;
+		for (
+			loc_pos.y=0;
+			loc_pos.y<(mt_dim() - offset_size_2d.y);
+			++loc_pos.y
+		) {
+			for (
+				loc_pos.x=0;
+				loc_pos.x<(mt_dim() - offset_size_2d.x);
+				++loc_pos.x
+			) {
+				const Vec2<size_t>
+					pos_j = loc_pos + offset_j,
+					pos_i = loc_pos + offset_i;
+
+				if (item_j.at(pos_j) != item_i.at(pos_i)) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	};
+	for (size_t j=0; j<mt_darr().size(); ++j) {
+		for (size_t i=0; i<mt_darr().size(); ++i) {
+			if (mt_compatible(j, i, Dir::Left)) {
+				insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Left});
+			}
+			if (mt_compatible(j, i, Dir::Top)) {
+				insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Top});
+			}
+			if (mt_compatible(j, i, Dir::Right)) {
+				insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Right});
+			}
+			if (mt_compatible(j, i, Dir::Bottom)) {
+				insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Bottom});
+			}
 		}
 	}
 	//for (i32 j=0; j<i32(input_tiles.size()); ++j) {
