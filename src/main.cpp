@@ -3,6 +3,29 @@
 
 int main(int argc, char** argv) {
 	//--------
+	//wfc::Metatile mt(3);
+	//for (size_t j=0; j<mt.dim(); ++j) {
+	//	for (size_t i=0; i<mt.dim(); ++i) {
+	//		mt.at({.x=i, .y=j}) = '0' + size_t((j * mt.dim()) + i);
+	//	}
+	//}
+	//for (size_t j=0; j<mt.dim(); ++j) {
+	//	for (size_t i=0; i<mt.dim(); ++i) {
+	//		printout(static_cast<char>(mt.at({i, j})));
+	//	}
+	//	printout("\n");
+	//}
+	//printout("\n");
+	//mt.rotate_p90();
+	//for (size_t j=0; j<mt.dim(); ++j) {
+	//	for (size_t i=0; i<mt.dim(); ++i) {
+	//		printout(static_cast<char>(mt.at({i, j})));
+	//	}
+	//	printout("\n");
+	//}
+
+	//return 0;
+	//--------
 	//if (argc < 4 || argc > 5) {
 	//	printerr("Usage 1: ", argv[0], " input_tiles_file width height\n");
 	//	printerr("Usage 2: ", argv[0],
@@ -77,7 +100,9 @@ int main(int argc, char** argv) {
 
 	static constexpr size_t
 		MIN_OUTPUT_DIM = 1,
-		MAX_OUTPUT_DIM = 32;
+		MAX_OUTPUT_DIM
+			//= 32;
+			= 64;
 
 	Vec2<size_t> size_2d;
 	inv_sconcat(ap.at("-w", 0).val, size_2d.x);
@@ -101,7 +126,7 @@ int main(int argc, char** argv) {
 	const bool
 		no_rotate = ap.has_opts("--no-rotate"),
 		no_reflect = ap.has_opts("--no-reflect"),
-		no_overlap = ap.has_opts("-no-overlap");
+		no_overlap = ap.has_opts("--no-overlap");
 
 	u64 rng_seed;
 
