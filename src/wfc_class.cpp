@@ -21,7 +21,9 @@ Wfc::Wfc(
 	//_no_overlap(s_no_overlap),
 	_rng(s_rng_seed) {
 	//--------
+	#ifdef DEBUG
 	printout("wfc::Wfc::Wfc(): s_rng_seed: ", s_rng_seed, "\n");
+	#endif		// DEBUG
 
 	if (mt_dim() > size_2d().x) {
 		throw std::invalid_argument(sconcat
@@ -394,9 +396,11 @@ void Wfc::_gen() {
 			_propagate(to_push.potential, guess_pos);
 		} catch (const std::exception& e) {
 			// We failed to `_propagate()`.
+			#ifdef DEBUG
 			printout("failed `_propagate()`: ",
 				_baktk_stk.size(),
 				"\n");
+			#endif		// DEBUG
 			//if (_baktk_stk.size() > 1) {
 			//	//did_pop = true;
 			//	_baktk_stk.pop();
@@ -405,8 +409,10 @@ void Wfc::_gen() {
 			//need_pop = true;
 			_baktk_stk.top().erase_guess();
 			if (_baktk_stk.top().guess_umap.size() == 0) {
+				#ifdef DEBUG
 				printout("failed `_propagate()`: ",
 					"doing `_baktk_stk.pop()`\n");
+				#endif		// DEBUG
 				did_pop = true;
 				_baktk_stk.pop();
 			}
