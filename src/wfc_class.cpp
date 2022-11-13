@@ -384,6 +384,7 @@ void Wfc::_gen() {
 		const CollapseTemps& ct
 			//= _calc_collapse_temps(guess_umap, guess_pos);
 			= _calc_collapse_temps(to_push.potential, guess_pos);
+			//= _calc_collapse_temps(potential, guess_pos);
 		Ddist ddist(ct.modded_weight_darr.begin(),
 			ct.modded_weight_darr.end());
 		to_collapse.clear();
@@ -408,6 +409,7 @@ void Wfc::_gen() {
 			//}
 			//need_pop = true;
 			_baktk_stk.top().erase_guess();
+			// hopefully this works?
 			if (_baktk_stk.top().guess_umap.size() == 0) {
 				#ifdef DEBUG
 				printout("failed `_propagate()`: ",
