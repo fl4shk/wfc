@@ -254,6 +254,7 @@ private:		// functions
 		const Vec2<size_t>& pos,
 		const Neighbor& neighbor,
 		std::queue<Vec2<size_t>>& needs_update
+		//std::stack<Vec2<size_t>>& needs_update
 	);
 	//--------
 	std::vector<Neighbor> _neighbors(

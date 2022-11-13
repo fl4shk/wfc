@@ -21,6 +21,8 @@ Wfc::Wfc(
 	//_no_overlap(s_no_overlap),
 	_rng(s_rng_seed) {
 	//--------
+	printout("wfc::Wfc::Wfc(): s_rng_seed: ", s_rng_seed, "\n");
+
 	if (mt_dim() > size_2d().x) {
 		throw std::invalid_argument(sconcat
 			("Wfc::Wfc(): Error: ",
@@ -282,29 +284,6 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	//--------
 }
 void Wfc::_gen() {
-	//do
-	//{
-	//	printout("_gen(): Here's the current state:\n");
-	//	_dbg_print();
-	//	//printout("\n");
-	//} while (_gen_iteration());
-
-	//for (;;) {
-	//	BaktkStkItem to_push;
-	//	to_push.least_entropy_pos_darr = _calc_least_entropy_pos_darr();
-	//	if (!to_push.least_entropy_pos_darr) {
-	//		break;
-	//	}
-
-	//	_baktk_stk.push(std::move(to_push));
-	//	const size_t size = _baktk_stk.size();
-	//	//while (_baktk_stk.size() == size)
-	//	//if (_gen_iteration()) {
-	//	//	//_baktk_stk.pop();
-	//	//}
-	//};
-	//_gen_iteration(_result);
-
 	//while (_gen_iteration()) {
 	//}
 	//if (BaktkStkItem to_push{.potential=_result}; true) {
@@ -315,14 +294,15 @@ void Wfc::_gen() {
 	//std::optional<PosDarr> least_entropy_pos_darr = std::nullopt;
 	_baktk_stk.push(BaktkStkItem
 		{.potential=_result});
-	//_baktk_stk.top().least_entropy_pos_darr
-	//	= *_calc_least_entropy_pos_darr(_baktk_stk.top().potential);
-	//_baktk_stk.top().init_guess_umap();
+	_baktk_stk.top().least_entropy_pos_darr
+		= *_calc_least_entropy_pos_darr(_baktk_stk.top().potential);
+	_baktk_stk.top().init_guess_umap();
 
 	//auto do_pop = [&]() -> void {
 	//	const size_t& guess_index = _baktk_stk.top().guess_index;
 	//};
-	bool did_pop = false;
+	bool
+		did_pop = false;
 	for (;;) {
 		//stk_top.least_entropy_pos_darr
 		//	= std::move(*temp_least_entropy_pos_darr);
@@ -335,36 +315,13 @@ void Wfc::_gen() {
 
 		BaktkStkItem& stk_top = _baktk_stk.top();
 
-		//const PosDarr& least_entropy_pos_darr
-		//	//= _calc_least_entropy_pos_darr(potential);
-		//	= stk_top.least_entropy_pos_darr;
 		Potential& potential = stk_top.potential;
-		//if (!did_pop) {
-			if (
-				auto temp_least_entropy_pos_darr
-					= _calc_least_entropy_pos_darr(potential);
-				temp_least_entropy_pos_darr
-			) {
-				stk_top.least_entropy_pos_darr
-					= *temp_least_entropy_pos_darr;
-				stk_top.init_guess_umap();
-			} else {
-				// At this point, we are done.
-				_result = std::move(potential);
-				break;
-			}
-		//}
 
 		auto& guess_umap = stk_top.guess_umap;
 		size_t& guess_index = stk_top.guess_index;
 		Vec2<size_t>& guess_pos = stk_top.guess_pos;
 		size_t& guess_ti = stk_top.guess_ti;
 
-		//auto do_pop = [this]() -> void {
-		//	_baktk_stk.pop();
-		//	auto& top = _baktk_stk.top();
-		//	top.guess_darr.erase(top.guess_index);
-		//};
 		if (did_pop) {
 			did_pop = false;
 		}
@@ -373,32 +330,38 @@ void Wfc::_gen() {
 			size_t(0), guess_umap.size() - 1);
 		stk_top.init_guess_pos();
 
-		if (guess_umap.at(guess_pos).size() == 0) {
-			guess_umap.erase(guess_pos);
-			printout("testificate 4\n");
-			//stk_top.erase_guess();
-			//continue;
-			if (guess_umap.size() == 0) {
-				_baktk_stk.pop();
-				did_pop = true;
-				printout("testificate 3\n");
-				continue;
-			}
-		}
+		//if (guess_umap.at(guess_pos).size() == 0) {
+		//	guess_umap.erase(guess_pos);
+		//	printout("just erased `guess_pos`\n");
+		//	if (guess_umap.size() == 0) {
+		//		did_pop = true;
+		//		printout("doing _baktk_stk.pop()
+		//	}
+		//	//stk_top.erase_guess();
+		//	continue;
+		//	//if (guess_umap.size() == 0) {
+		//	//	_baktk_stk.pop();
+		//	//	did_pop = true;
+		//	//	printout("testificate 3\n");
+		//	//	continue;
+		//	//}
+		//}
 		//--------
-		const auto& prev_to_collapse
-			= potential.at(guess_pos.y).at(guess_pos.x);
+		//const auto& prev_to_collapse
+		//	= potential.at(guess_pos.y).at(guess_pos.x);
 
-		if (prev_to_collapse.size() == 0) {
-			_baktk_stk.pop();
-			did_pop = true;
-			//_baktk_stk.top().erase_guess();
-			//if (_baktk_stk.top().guess_umap.size() == 0) {
-			//	_baktk_stk.pop();
-			//}
-			printout("testificate\n");
-			continue;
-		}
+		//if (prev_to_collapse.size() == 0) {
+		//	//if (_baktk_stk.size() > 1) {
+		//		_baktk_stk.pop();
+		//	//}
+		//	did_pop = true;
+		//	//_baktk_stk.top().erase_guess();
+		//	//if (_baktk_stk.top().guess_umap.size() == 0) {
+		//	//	_baktk_stk.pop();
+		//	//}
+		//	printout("testificate\n");
+		//	continue;
+		//}
 
 		//printout("guess_umap right before stuff with `to_push`:\n");
 		//stk_top.print_guess_umap();
@@ -413,7 +376,7 @@ void Wfc::_gen() {
 		//_dbg_print();
 
 		BaktkStkItem to_push
-			= {.potential=stk_top.potential};
+			= {.potential=potential};
 		auto& to_collapse
 			= to_push.potential.at(guess_pos.y).at(guess_pos.x);
 		const CollapseTemps& ct
@@ -430,14 +393,36 @@ void Wfc::_gen() {
 		try {
 			_propagate(to_push.potential, guess_pos);
 		} catch (const std::exception& e) {
-			did_pop = true;
 			// We failed to `_propagate()`.
-			_baktk_stk.pop();
+			printout("failed `_propagate()`: ",
+				_baktk_stk.size(),
+				"\n");
+			//if (_baktk_stk.size() > 1) {
+			//	//did_pop = true;
+			//	_baktk_stk.pop();
+			//	_baktk_stk.top().erase_guess();
+			//}
+			//need_pop = true;
 			_baktk_stk.top().erase_guess();
-			printout("testificate 2\n");
+			if (_baktk_stk.top().guess_umap.size() == 0) {
+				printout("failed `_propagate()`: ",
+					"doing `_baktk_stk.pop()`\n");
+				did_pop = true;
+				_baktk_stk.pop();
+			}
 
 			continue;
 		}
+
+		auto temp_least_entropy_pos_darr
+			= _calc_least_entropy_pos_darr(to_push.potential);
+		if (!temp_least_entropy_pos_darr) {
+			_result = std::move(to_push.potential);
+			break;
+		}
+		to_push.least_entropy_pos_darr
+			= *temp_least_entropy_pos_darr;
+		to_push.init_guess_umap();
 		_baktk_stk.push(std::move(to_push));
 		//--------
 	}
@@ -775,6 +760,7 @@ void Wfc::_propagate(
 	const Vec2<size_t>& start_pos
 ) {
 	std::queue<Vec2<size_t>> needs_update;
+	//std::stack<Vec2<size_t>> needs_update;
 	needs_update.push(start_pos);
 	while (needs_update.size() > 0) {
 		//printout("needs_update.size(): ", needs_update.size(), "\n");
@@ -783,7 +769,11 @@ void Wfc::_propagate(
 		//}
 		//printout("\n");
 
-		if (const Vec2<size_t>& pos=needs_update.front(); true) {
+		if (
+			const Vec2<size_t>& pos=needs_update.front();
+			//const Vec2<size_t>& pos=needs_update.top();
+			true
+		) {
 			needs_update.pop();
 			const std::vector<Neighbor>& neighbors = _neighbors(pos);
 			for (const auto& neighbor: neighbors) {
@@ -801,6 +791,7 @@ void Wfc::_add_constraint(
 	// computed with `reverse()`
 	const Neighbor& neighbor,
 	std::queue<Vec2<size_t>>& needs_update
+	//std::stack<Vec2<size_t>>& needs_update
 ) {
 	PotElem& nb_pot_elem
 		= potential.at(neighbor.pos.y).at(neighbor.pos.x);
