@@ -298,7 +298,8 @@ void Wfc::_gen() {
 		{.potential=_result});
 	_baktk_stk.top().least_entropy_pos_darr
 		= *_calc_least_entropy_pos_darr(_baktk_stk.top().potential);
-	_baktk_stk.top().init_guess_umap();
+	//_baktk_stk.top().init_guess_umap();
+	_baktk_stk.top().init_guess_darr();
 
 	//auto do_pop = [&]() -> void {
 	//	const size_t& guess_index = _baktk_stk.top().guess_index;
@@ -319,7 +320,8 @@ void Wfc::_gen() {
 
 		Potential& potential = stk_top.potential;
 
-		auto& guess_umap = stk_top.guess_umap;
+		//auto& guess_umap = stk_top.guess_umap;
+		auto& guess_darr = stk_top.guess_darr;
 		size_t& guess_index = stk_top.guess_index;
 		Vec2<size_t>& guess_pos = stk_top.guess_pos;
 		size_t& guess_ti = stk_top.guess_ti;
@@ -328,8 +330,10 @@ void Wfc::_gen() {
 			did_pop = false;
 		}
 
+		//guess_index = rng_run<size_t>(_rng,
+		//	size_t(0), guess_umap.size() - 1);
 		guess_index = rng_run<size_t>(_rng,
-			size_t(0), guess_umap.size() - 1);
+			size_t(0), guess_darr.size() - 1);
 		stk_top.init_guess_pos();
 
 		//if (guess_umap.at(guess_pos).size() == 0) {
@@ -410,7 +414,8 @@ void Wfc::_gen() {
 			//need_pop = true;
 			_baktk_stk.top().erase_guess();
 			// hopefully this works?
-			if (_baktk_stk.top().guess_umap.size() == 0) {
+			//if (_baktk_stk.top().guess_umap.size() == 0)
+			if (_baktk_stk.top().guess_darr.size() == 0) {
 				#ifdef DEBUG
 				printout("failed `_propagate()`: ",
 					"doing `_baktk_stk.pop()`\n");
@@ -430,7 +435,8 @@ void Wfc::_gen() {
 		}
 		to_push.least_entropy_pos_darr
 			= *temp_least_entropy_pos_darr;
-		to_push.init_guess_umap();
+		//to_push.init_guess_umap();
+		to_push.init_guess_darr();
 		_baktk_stk.push(std::move(to_push));
 		//--------
 	}

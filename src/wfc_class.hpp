@@ -57,14 +57,15 @@ public:		// types
 	//	PotElem pot_elem;
 	//};
 	using PosDarr = std::vector<Vec2<size_t>>;
-	//using Guess = std::pair<Vec2<size_t>, size_t>;
+	using Guess = std::pair<Vec2<size_t>, PotElem>;
 	class BaktkStkItem final {
 	public:		// variables
 		Potential potential;
 		PosDarr least_entropy_pos_darr;
 
 		//std::unordered_map<Vec2<size_t>, PotElem> guess_darr;
-		PotentialUmap guess_umap;
+		//PotentialUmap guess_umap;
+		std::vector<Guess> guess_darr;
 		size_t guess_index = size_t(-1);
 		Vec2<size_t> guess_pos = Vec2<size_t>(-1, -1);
 		size_t guess_ti = -1;
@@ -77,27 +78,29 @@ public:		// types
 		//std::unordered_map<Vec2<size_t>, BaktkState> next_state_umap;
 		//PotentialUmap pot_umap;
 	public:		// functions
-		void print_guess_umap() {
-			for (const auto& guess: guess_umap) {
-				printout("{", guess.first, " ",
-					"{");
-				for (const auto& ti: guess.second) {
-					printout(ti, " ");
-				}
-				printout("}",
-					"}\n");
-			}
-		}
-		void print_guess_umap_at_gp() {
-			printout("guess_umap.at(gp): ",
-				"{");
-			for (const auto& ti: guess_umap.at(guess_pos)) {
-				printout(ti, " ");
-			}
-			printout("}\n");
-		}
-		void init_guess_umap() {
-			guess_umap.clear();
+		//void print_guess_umap() {
+		//	for (const auto& guess: guess_umap) {
+		//		printout("{", guess.first, " ",
+		//			"{");
+		//		for (const auto& ti: guess.second) {
+		//			printout(ti, " ");
+		//		}
+		//		printout("}",
+		//			"}\n");
+		//	}
+		//}
+		//void print_guess_umap_at_gp() {
+		//	printout("guess_umap.at(gp): ",
+		//		"{");
+		//	for (const auto& ti: guess_umap.at(guess_pos)) {
+		//		printout(ti, " ");
+		//	}
+		//	printout("}\n");
+		//}
+		//void init_guess_umap()
+		void init_guess_darr() {
+			//guess_umap.clear();
+			guess_darr.clear();
 			//Vec2<size_t> pos;
 			//for (pos.y=0; pos.y<potential.size(); ++pos.y) {
 			//	const auto& row = potential.at(pos.y);
@@ -111,20 +114,22 @@ public:		// types
 				//for (const auto& ti: pot_elem) {
 					//guess_darr.push_back(Guess(pos, ti));
 				//}
-				guess_umap.insert(std::pair(pos, pot_elem));
+				//guess_umap.insert(std::pair(pos, pot_elem));
+				guess_darr.push_back(std::pair(pos, pot_elem));
 			}
 		}
 		void init_guess_pos() {
-			size_t i = 0;
+			//size_t i = 0;
 			// Since `std::unordered_map`'s `iterator`s don't allow adding
 			// arbitrary offsets to them, we use the below `for` loop.
-			for (const auto& item: guess_umap) {
-				if (i == guess_index) {
-					guess_pos = item.first;
-					break;
-				}
-				++i;
-			}
+			//for (const auto& item: guess_umap) {
+			//	if (i == guess_index) {
+			//		guess_pos = item.first;
+			//		break;
+			//	}
+			//	++i;
+			//}
+			guess_pos = guess_darr.at(guess_index).first;
 		}
 		//inline const Vec2<size_t>& guess() const {
 		//	return guess_darr.at(guess_index);
@@ -136,9 +141,13 @@ public:		// types
 		//	return guess().second;
 		//}
 		inline void erase_guess() {
-			guess_umap.at(guess_pos).erase(guess_ti);
-			if (guess_umap.at(guess_pos).size() == 0) {
-				guess_umap.erase(guess_pos);
+			//guess_umap.at(guess_pos).erase(guess_ti);
+			//if (guess_umap.at(guess_pos).size() == 0) {
+			//	guess_umap.erase(guess_pos);
+			//}
+			guess_darr.at(guess_index).second.erase(guess_ti);
+			if (guess_darr.at(guess_index).second.size() == 0) {
+				guess_darr.erase(guess_darr.begin() + guess_index);
 			}
 		}
 	};
