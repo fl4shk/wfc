@@ -37,6 +37,7 @@ public:		// types
 	//using PotElem = std::unordered_map<size_t, bool>;
 	using PotElem = std::unordered_set<size_t>;
 	using Potential = std::vector<std::vector<PotElem>>;
+	using PotentialUmap = std::unordered_map<Vec2<size_t>, PotElem>;
 
 	//// "Tprops" is short for "tile properties"
 	//class Tprops final {
@@ -55,21 +56,96 @@ public:		// types
 	//	//Potential potential;
 	//	PotElem pot_elem;
 	//};
-	//class BaktkStkItem final {
-	//public:		// variables
-	//	std::vector<Vec2<size_t>> least_entropy_pos_darr;
+	using PosDarr = std::vector<Vec2<size_t>>;
+	//using Guess = std::pair<Vec2<size_t>, size_t>;
+	class BaktkStkItem final {
+	public:		// variables
+		Potential potential;
+		PosDarr least_entropy_pos_darr;
 
-	//	//BaktkState prev_state;
-	//	// states to try
-	//	//std::vector<BaktkState> next_state_darr; 
-	//	std::unordered_map<Vec2<size_t>, BaktkState> next_state_umap;
-	//};
-	//class BaktkTree final {
-	//};
+		//std::unordered_map<Vec2<size_t>, PotElem> guess_darr;
+		PotentialUmap guess_umap;
+		size_t guess_index = size_t(-1);
+		Vec2<size_t> guess_pos = Vec2<size_t>(-1, -1);
+		size_t guess_ti = -1;
+		//PotentialUmap guesses;
+		//PosDarr least_entropy_pos_darr;
+
+		//BaktkState prev_state;
+		// states to try
+		//std::vector<BaktkState> next_state_darr; 
+		//std::unordered_map<Vec2<size_t>, BaktkState> next_state_umap;
+		//PotentialUmap pot_umap;
+	public:		// functions
+		void print_guess_umap() {
+			for (const auto& guess: guess_umap) {
+				printout("{", guess.first, " ",
+					"{");
+				for (const auto& ti: guess.second) {
+					printout(ti, " ");
+				}
+				printout("}",
+					"}\n");
+			}
+		}
+		void print_guess_umap_at_gp() {
+			printout("guess_umap.at(gp): ",
+				"{");
+			for (const auto& ti: guess_umap.at(guess_pos)) {
+				printout(ti, " ");
+			}
+			printout("}\n");
+		}
+		void init_guess_umap() {
+			guess_umap.clear();
+			//Vec2<size_t> pos;
+			//for (pos.y=0; pos.y<potential.size(); ++pos.y) {
+			//	const auto& row = potential.at(pos.y);
+			//	for (pos.x=0; pos.x<row.size(); ++pos.x) {
+			//		const auto& item = row.at(pos.x);
+			//		guess_uset.insert(std::pair(pos, item));
+			//	}
+			//}
+			for (const Vec2<size_t>& pos: least_entropy_pos_darr) {
+				const auto& pot_elem = potential.at(pos.y).at(pos.x);
+				//for (const auto& ti: pot_elem) {
+					//guess_darr.push_back(Guess(pos, ti));
+				//}
+				guess_umap.insert(std::pair(pos, pot_elem));
+			}
+		}
+		void init_guess_pos() {
+			size_t i = 0;
+			// Since `std::unordered_map`'s `iterator`s don't allow adding
+			// arbitrary offsets to them, we use the below `for` loop.
+			for (const auto& item: guess_umap) {
+				if (i == guess_index) {
+					guess_pos = item.first;
+					break;
+				}
+				++i;
+			}
+		}
+		//inline const Vec2<size_t>& guess() const {
+		//	return guess_darr.at(guess_index);
+		//}
+		//inline const Vec2<size_t>& tc_pos() const { // to collapse pos
+		//	return guess().first;
+		//}
+		//inline const size_t& ti() const { // tile index
+		//	return guess().second;
+		//}
+		inline void erase_guess() {
+			guess_umap.at(guess_pos).erase(guess_ti);
+			if (guess_umap.at(guess_pos).size() == 0) {
+				guess_umap.erase(guess_pos);
+			}
+		}
+	};
 private:		// variables
 	Potential _result;
 	//std::stack<std::vector<Potential>> _potential_darr_stk;
-	//std::stack<BaktkStkItem> _baktk_stk; // for backtracking
+	std::stack<BaktkStkItem> _baktk_stk; // for backtracking
 	Vec2<size_t>
 		_size_2d;
 	size_t 
@@ -123,10 +199,11 @@ private:		// functions
 	//--------
 	//bool _gen_outer_iteration();
 	//bool _gen_inner_iteration();
-	bool _backtrack(
-		Potential& potential//,
-		//size_t depth
-	);
+	//void _gen_iteration(
+	//	//Potential& potential//,
+	//	//size_t depth
+	//);
+	//void _backtrack();
 	//std::optional<Potential> _backtrack_next(
 	//	//std::vector<Vec2<size_t>>& least_entropy_pos_darr,
 	//	//size_t to_collapse_pos_index,
@@ -146,16 +223,17 @@ private:		// functions
 	};
 	CollapseTemps _calc_collapse_temps(
 		const Potential& potential,
+		//const PotentialUmap& pot_umap,
 		const Vec2<size_t>& pos
 	) const;
 	double _calc_modded_weight(
 		const Potential& potential,
+		//const PotentialUmap& pot_umap,
 		const Vec2<size_t>& pos, const size_t& item
 	) const;
 	//--------
 	//std::optional<Vec2<size_t>> _rand_pos_w_least_entropy();
-	std::optional<std::vector<Vec2<size_t>>>
-	_calc_least_entropy_pos_darr(
+	std::optional<PosDarr> _calc_least_entropy_pos_darr(
 		const Potential& potential
 	);
 	//--------
@@ -182,7 +260,7 @@ private:		// functions
 		const Vec2<size_t>& pos
 	) const;
 	//--------
-	//void _dbg_print() const;
+	void _dbg_print() const;
 	//--------
 };
 //--------
