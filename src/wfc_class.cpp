@@ -53,12 +53,30 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	//_rule_uset.clear();
 	_mt_darr.clear();
 	_r2w_umap.clear();
-	_weight_umap.clear();
+	_weight_darr.clear();
 
 	PotElem pot_elem;
 
+	// Insert weights
+	//for (const auto& item: mt_darr()) 
+	//for (size_t i=0; i<mt_darr().size(); ++i) {
+	//	insert_weight(i);
+	//}
+	//auto insert_weight = [&](const size_t& item) -> void {
+	//	// Insert weights, so that tiles that appear more often in
+	//	// `input_tiles` have a higher weight
+	//	//const size_t& item = row.at(i);
+	//	pot_elem.insert(item);
+	//	if (temp_weight_umap.contains(item)) {
+	//		//_weight_umap.at(item) += 3.0;
+	//		temp_weight_umap.at(item) += 1.0;
+	//	} else { // if (!temp_weight_umap.contains(item))
+	//		temp_weight_umap.insert(std::pair(item, 1.0));
+	//	}
+	//};
+
 	// Insert metatiles
-	if (std::unordered_set<Metatile> mt_uset; true) {
+	if (std::unordered_map<Metatile, double> mt_umap; true) {
 		auto traverse = [&](size_t j, size_t i) -> Metatile {
 			Metatile ret(mt_dim());
 
@@ -78,72 +96,83 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 		for (size_t j=0; j<input_tiles.size(); ++j) {
 			const auto& row = input_tiles.at(j);
 			for (size_t i=0; i<row.size(); ++i) {
-				mt_uset.insert(traverse(j, i));
+				const auto& mt = traverse(j, i);
+				//mt_umap.insert(traverse(j, i));
+				if (!mt_umap.contains(mt)) {
+					mt_umap.insert(std::pair(mt, 1.0));
+				} else {
+					mt_umap.at(mt) += 1.0;
+				}
 			}
 		}
 
-		if (std::unordered_set<Metatile> ext_mt_uset; true) {
-			for (const auto& item: mt_uset) {
+		if (std::unordered_map<Metatile, double> ext_mt_umap; true) {
+			for (const auto& item: mt_umap) {
+				auto do_mt_insert = [&](
+					const Metatile& to_insert
+				) -> void {
+					//if (!ext_mt_umap.contains(mt)) {
+					//	ext_mt_umap.insert(std::pair(to_insert, 1.0));
+					//} else {
+					//	ext_mt_umap.at(to_insert) += 1.0;
+					//}
+					// Use weights equal to that of the the non-rotated,
+					// non-reflected `Metatile`'s weights
+					ext_mt_umap.insert(std::pair(to_insert, item.second));
+				};
 				if (!no_reflect()) {
-					ext_mt_uset.insert(Metatile(item).reflect_x());
-					ext_mt_uset.insert(Metatile(item).reflect_y());
-					ext_mt_uset.insert
-						(Metatile(item).reflect_x().reflect_y());
+					do_mt_insert(Metatile(item.first).reflect_x());
+					do_mt_insert(Metatile(item.first).reflect_y());
+					do_mt_insert
+						(Metatile(item.first).reflect_x().reflect_y());
 				}
 				if (!no_rotate()) {
-					auto rot90 = Metatile(item).rotate_p90();
-					ext_mt_uset.insert(rot90);
+					auto rot90 = Metatile(item.first).rotate_p90();
+					do_mt_insert(rot90);
 					if (!no_reflect()) {
-						ext_mt_uset.insert(Metatile(rot90).reflect_x());
-						ext_mt_uset.insert(Metatile(rot90).reflect_y());
-						ext_mt_uset.insert
+						do_mt_insert(Metatile(rot90).reflect_x());
+						do_mt_insert(Metatile(rot90).reflect_y());
+						do_mt_insert
 							(Metatile(rot90).reflect_x().reflect_y());
 					}
 
 					auto rot180 = Metatile(rot90).rotate_p90();
-					ext_mt_uset.insert(rot180);
+					do_mt_insert(rot180);
 					if (!no_reflect()) {
-						ext_mt_uset.insert(Metatile(rot180).reflect_x());
-						ext_mt_uset.insert(Metatile(rot180).reflect_y());
-						ext_mt_uset.insert
+						do_mt_insert(Metatile(rot180).reflect_x());
+						do_mt_insert(Metatile(rot180).reflect_y());
+						do_mt_insert
 							(Metatile(rot180).reflect_x().reflect_y());
 					}
 
 					auto rot270 = Metatile(rot180).rotate_p90();
-					ext_mt_uset.insert(rot270);
+					do_mt_insert(rot270);
 					if (!no_reflect()) {
-						ext_mt_uset.insert(Metatile(rot270).reflect_x());
-						ext_mt_uset.insert(Metatile(rot270).reflect_y());
-						ext_mt_uset.insert
+						do_mt_insert(Metatile(rot270).reflect_x());
+						do_mt_insert(Metatile(rot270).reflect_y());
+						do_mt_insert
 							(Metatile(rot270).reflect_x().reflect_y());
 					}
 				}
 			}
-			mt_uset.merge(std::move(ext_mt_uset));
+			mt_umap.merge(std::move(ext_mt_umap));
 		}
 
-		for (const auto& item: mt_uset) {
-			_mt_darr.push_back(item);
+		if (size_t i=0; true) {
+			for (const auto& item: mt_umap) {
+				_mt_darr.push_back(item.first);
+				//pot_elem.insert(i);
+				//pot_elem.insert(i);
+				pot_elem.data.push_back(true);
+				//pot_elem.data.push_back(1);
+				//pot_elem.data.push_back("asdf");
+				//pot_elem.insert_maybe(i);
+				_weight_darr.push_back(item.second);
+				++i;
+			}
 		}
 	}
 
-	// Insert weights
-	auto insert_weight = [&](const size_t& item) -> void {
-		// Insert weights, so that tiles that appear more often in
-		// `input_tiles` have a higher weight
-		//const size_t& item = row.at(i);
-		pot_elem.insert(item);
-		if (weight_umap().contains(item)) {
-			//_weight_umap.at(item) += 3.0;
-			_weight_umap.at(item) += 1.0;
-		} else { // if (!weight_umap().contains(item))
-			_weight_umap.insert(std::pair(item, 1.0));
-		}
-	};
-	//for (const auto& item: mt_darr()) 
-	for (size_t i=0; i<mt_darr().size(); ++i) {
-		insert_weight(i);
-	}
 	//printout("Inserting weights\n");
 	//for (i32 j=0; j<i32(input_tiles.size()); ++j) {
 	//	const auto& row = input_tiles.at(j);
@@ -152,6 +181,15 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	//		insert_weight(row.at(i);
 	//	}
 	//}
+	//printout("_learn(): `pot_elem`: ");
+	//for (size_t i=0; i<pot_elem.size(); ++i) {
+	//	if (pot_elem.at(i)) {
+	//		printout(i);
+	//	} else {
+	//		printout("?");
+	//	}
+	//}
+	//printout("\n");
 	_result = Potential(size_2d().y,
 		std::vector<PotElem>(size_2d().x, pot_elem));
 	//_potential_darr_stk.push({std::move(potential)});
@@ -301,21 +339,9 @@ void Wfc::_gen() {
 	//_baktk_stk.top().init_guess_umap();
 	_baktk_stk.top().init_guess_darr();
 
-	//auto do_pop = [&]() -> void {
-	//	const size_t& guess_index = _baktk_stk.top().guess_index;
-	//};
 	bool
 		did_pop = false;
 	for (;;) {
-		//stk_top.least_entropy_pos_darr
-		//	= std::move(*temp_least_entropy_pos_darr);
-		//stk_top.init_guess_umap();
-
-		//if (_baktk_stk.top().guess_umap.size() == 0) {
-		//	_baktk_stk.pop();
-		//	continue;
-		//}
-
 		BaktkStkItem& stk_top = _baktk_stk.top();
 
 		Potential& potential = stk_top.potential;
@@ -335,23 +361,6 @@ void Wfc::_gen() {
 		guess_index = rng_run<size_t>(_rng,
 			size_t(0), guess_darr.size() - 1);
 		stk_top.init_guess_pos();
-
-		//if (guess_umap.at(guess_pos).size() == 0) {
-		//	guess_umap.erase(guess_pos);
-		//	printout("just erased `guess_pos`\n");
-		//	if (guess_umap.size() == 0) {
-		//		did_pop = true;
-		//		printout("doing _baktk_stk.pop()
-		//	}
-		//	//stk_top.erase_guess();
-		//	continue;
-		//	//if (guess_umap.size() == 0) {
-		//	//	_baktk_stk.pop();
-		//	//	did_pop = true;
-		//	//	printout("testificate 3\n");
-		//	//	continue;
-		//	//}
-		//}
 		//--------
 		//const auto& prev_to_collapse
 		//	= potential.at(guess_pos.y).at(guess_pos.x);
@@ -391,11 +400,31 @@ void Wfc::_gen() {
 			//= _calc_collapse_temps(potential, guess_pos);
 		Ddist ddist(ct.modded_weight_darr.begin(),
 			ct.modded_weight_darr.end());
-		to_collapse.clear();
+		//const size_t old_to_collapse_size
+		//	//= to_collapse.num_active();
+		//	= to_collapse.data.size();
+		//to_collapse.clear();
+		for (size_t i=0; i<to_collapse.data.size(); ++i) {
+			to_collapse.erase(i);
+		}
+		//to_collapse.clear();
+		//for (size_t i=0; i<old_to_collapse_size; ++i) {
+		//	to_collapse.push_back(std::nullopt);
+		//}
+		//for (size_t ti=0; ti<to_collapse.size(); ++ti) {
+		//	//to_collapse.at(ti) = std::nullopt;
+		//	if (to_collapse.contains(ti)) {
+		//		to_collapse.erase(ti);
+		//	}
+		//}
 
 		const auto& rng_val = ddist(_rng);
 		guess_ti = ct.tile_darr.at(rng_val);
+		//printout("guess_ti: ", guess_ti, "\n");
+		//to_collapse.insert(guess_ti);
 		to_collapse.insert(guess_ti);
+		//to_collapse.at(guess_ti) = 1;
+		//printout("to_collapse: ", to_collapse, "\n");
 
 		try {
 			_propagate(to_push.potential, guess_pos);
@@ -406,11 +435,6 @@ void Wfc::_gen() {
 				_baktk_stk.size(),
 				"\n");
 			#endif		// DEBUG
-			//if (_baktk_stk.size() > 1) {
-			//	//did_pop = true;
-			//	_baktk_stk.pop();
-			//	_baktk_stk.top().erase_guess();
-			//}
 			//need_pop = true;
 			_baktk_stk.top().erase_guess();
 			// hopefully this works?
@@ -632,18 +656,21 @@ auto Wfc::_calc_collapse_temps(
 	//std::vector<double> weight_darr;
 	//std::unordered_map<size_t, size_t> tid_umap;
 	if (size_t i=0; true) {
-		for (const auto& item: pot_elem) {
-			//ret.weight_darr.push_back(weight_umap().at(item.first));
-			//ret.tile_darr.push_back(item.first);
-			//ret.tid_umap.insert(std::pair(item.first, i));
-			//ret.weight_darr.push_back(weight_umap().at(item));
-			ret.modded_weight_darr.push_back(_calc_modded_weight
-				(potential, pos, item));
-			//ret.modded_weight_darr.push_back(_calc_modded_weight
-			//	(pot_umap, pos, item));
-			ret.tile_darr.push_back(item);
-			ret.tid_umap.insert(std::pair(item, i));
-			++i;
+		//for (const auto& item: pot_elem)
+		for (size_t item=0; item<pot_elem.data.size(); ++item) {
+			if (pot_elem.contains(item)) {
+				//ret.weight_darr.push_back(weight_umap().at(item.first));
+				//ret.tile_darr.push_back(item.first);
+				//ret.tid_umap.insert(std::pair(item.first, i));
+				//ret.weight_darr.push_back(weight_umap().at(item));
+				ret.modded_weight_darr.push_back(_calc_modded_weight
+					(potential, pos, item));
+				//ret.modded_weight_darr.push_back(_calc_modded_weight
+				//	(pot_umap, pos, item));
+				ret.tile_darr.push_back(item);
+				ret.tid_umap.insert(std::pair(item, i));
+				++i;
+			}
 		}
 	}
 
@@ -668,8 +695,10 @@ double Wfc::_calc_modded_weight(
 					= potential.at(neighbor.pos.y).at(neighbor.pos.x);
 					//= pot_umap.at(neighbor.pos);
 				if (
-					nb_pot_elem.size() == 1
-					&& r2w_pair.first.t1 == *nb_pot_elem.begin()
+					//nb_pot_elem.size() == 1
+					nb_pot_elem.num_active() == 1
+					//&& r2w_pair.first.t1 == *nb_pot_elem.begin()
+					&& r2w_pair.first.t1 == *nb_pot_elem.first_set()
 					&& r2w_pair.first.d == neighbor.d
 				) {
 					found = true;
@@ -683,8 +712,10 @@ double Wfc::_calc_modded_weight(
 					= potential.at(neighbor.pos.y).at(neighbor.pos.x);
 					//= pot_umap.at(neighbor.pos);
 				if (
-					nb_pot_elem.size() == 1
-					&& r2w_pair.first.t0 == *nb_pot_elem.begin()
+					//nb_pot_elem.size() == 1
+					nb_pot_elem.num_active() == 1
+					//&& r2w_pair.first.t0 == *nb_pot_elem.begin()
+					&& r2w_pair.first.t0 == *nb_pot_elem.first_set()
 					&& r2w_pair.first.d == neighbor.d
 				) {
 					found = true;
@@ -695,7 +726,7 @@ double Wfc::_calc_modded_weight(
 		}
 	}
 	if (!found) {
-		ret = weight_umap().at(item);
+		ret = weight_darr().at(item);
 	}
 	return ret;
 }
@@ -712,7 +743,8 @@ auto Wfc::_calc_least_entropy_pos_darr(
 			const auto& tiles = potential.at(pos.y).at(pos.x);
 			//const CollapseTemps ct = _calc_collapse_temps(pos);
 			//if (ct.tile_darr.size() == 0)
-			if (tiles.size() == 0) {
+			//if (tiles.size() == 0) 
+			if (tiles.num_active() == 0) {
 				// We've failed the generation at this point.
 				//_dbg_print();
 				//sleep(1);
@@ -722,7 +754,8 @@ auto Wfc::_calc_least_entropy_pos_darr(
 				return std::nullopt;
 			}
 			//else if (ct.tile_darr.size() == 1)
-			else if (tiles.size() == 1) {
+			//else if (tiles.size() == 1)
+			else if (tiles.num_active() == 1) {
 				//printout("tile_found ");
 				continue;
 			}
@@ -731,10 +764,14 @@ auto Wfc::_calc_least_entropy_pos_darr(
 			double temp_entropy = 0.0;
 			//for (const auto& tile: tiles)
 			//for (const auto& weight: ct.weight_darr)
-			for (const auto& tile: tiles) {
-				//const double& tile_weight = weight_umap().at(tile.first);
-				const double& weight = weight_umap().at(tile);
-				temp_entropy -= weight * std::log(weight);
+			//for (const auto& tile: tiles) 
+			for (size_t ti=0; ti<tiles.data.size(); ++ti) {
+				if (tiles.contains(ti)) {
+					//const double& tile_weight = weight_umap()
+					//	.at(ti.first);
+					const double& weight = weight_darr().at(ti);
+					temp_entropy -= weight * std::log(weight);
+				}
 			}
 			//temp_entropy = -temp_entropy;
 			//printout(temp_entropy, " ");
@@ -774,15 +811,8 @@ void Wfc::_propagate(
 	const Vec2<size_t>& start_pos
 ) {
 	std::queue<Vec2<size_t>> needs_update;
-	//std::stack<Vec2<size_t>> needs_update;
 	needs_update.push(start_pos);
 	while (needs_update.size() > 0) {
-		//printout("needs_update.size(): ", needs_update.size(), "\n");
-		//for (const auto& pos: needs_update) {
-		//	printout(pos, " ");
-		//}
-		//printout("\n");
-
 		if (
 			const Vec2<size_t>& pos=needs_update.front();
 			//const Vec2<size_t>& pos=needs_update.top();
@@ -791,11 +821,14 @@ void Wfc::_propagate(
 			needs_update.pop();
 			const std::vector<Neighbor>& neighbors = _neighbors(pos);
 			for (const auto& neighbor: neighbors) {
-				_add_constraint(potential, pos, neighbor,
-					needs_update);
+				_add_constraint(potential, pos, neighbor, needs_update);
 			}
 		}
 	}
+
+	//printout("wfc::Wfc::_propagate(): here are my results:\n");
+	//_dbg_print();
+	//printout("\n");
 }
 void Wfc::_add_constraint(
 	Potential& potential,
@@ -807,40 +840,93 @@ void Wfc::_add_constraint(
 	std::queue<Vec2<size_t>>& needs_update
 	//std::stack<Vec2<size_t>>& needs_update
 ) {
+	const PotElem& tiles = potential.at(pos.y).at(pos.x);
 	PotElem& nb_pot_elem
 		= potential.at(neighbor.pos.y).at(neighbor.pos.x);
-	const PotElem& tiles = potential.at(pos.y).at(pos.x);
+	//printout("debug: _add_constraint(): tiles: ", tiles, "\n");
 
-	PotElem to_erase_uset;
+	std::unordered_set<size_t>
+		//tiles,
+		//other_tiles,
+		to_erase_uset;
+	//std::vector<size_t> to_erase_darr;
+	//for (size_t i=0; i<raw_tiles.size(); ++i) {
+	//	if (raw_tiles.contains(i)) {
+	//		tiles.insert(i);
+	//	}
+	//}
+	//for (size_t i=0; i<nb_pot_elem.size(); ++i) {
+	//	if (nb_pot_elem.contains(i)) {
+	//		other_tiles.insert(i);
+	//	}
+	//}
 
-	for (const size_t& other_tile: nb_pot_elem) {
-		bool found = false;
-		//for (const size_t& curr_tile: ct.tile_darr)
-		for (const size_t& curr_tile: tiles) {
-			if (
-				//rule_uset().contains(Rule
-				//	{.t0=curr_tile, .t1=other_tile, .d=neighbor.d})
-				r2w_umap().contains(Rule
-					{.t0=curr_tile, .t1=other_tile, .d=neighbor.d})
-				//rule_uset().contains(Rule
-				//	{.t0=other_tile,
-				//	.t1=curr_tile,
-				//	.d=reverse(neighbor.d)})
+	//for (const size_t& other_tile: nb_pot_elem) 
+	//for (const size_t& other_tile: other_tiles) 
+	for (
+		size_t other_tile=0;
+		other_tile<nb_pot_elem.data.size();
+		++other_tile
+	) {
+		//if (nb_pot_elem.at(other_tile))
+		if (nb_pot_elem.contains(other_tile)) {
+			//printout("testificate: ", other_tile, "\n");
+			bool found = false;
+			//for (const size_t& curr_tile: ct.tile_darr)
+			//for (const size_t& curr_tile: tiles) 
+			for (
+				size_t curr_tile=0;
+				curr_tile<tiles.data.size();
+				++curr_tile
 			) {
-				found = true;
-				break;
+				if (
+					//nb_pot_elem.contains(other_tile)
+					tiles.contains(curr_tile)
+					//tiles.at(curr_tile)
+					//&& rule_uset().contains(Rule
+					//	{.t0=curr_tile, .t1=other_tile, .d=neighbor.d})
+					//&& 
+					&& r2w_umap().contains(Rule
+						{.t0=curr_tile, .t1=other_tile, .d=neighbor.d})
+					//&& rule_uset().contains(Rule
+					//	{.t0=other_tile,
+					//	.t1=curr_tile,
+					//	.d=reverse(neighbor.d)})
+				) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				//printout("_add_constraint(): !found: ",
+				//	other_tile, "\n");
+				to_erase_uset.insert(other_tile);
+				//bool found_other_tile = false;
+				//for (const auto& to_erase: to_erase_darr) {
+				//	if (to_erase == other_tile) {
+				//		found_other_tile = true;
+				//		break;
+				//	}
+				//}
+				//if (!found_other_tile) {
+				//	to_erase_darr.push_back(other_tile);
+				//}
+				needs_update.push(neighbor.pos);
 			}
 		}
-		if (!found) {
-			to_erase_uset.insert(other_tile);
-			needs_update.push(neighbor.pos);
-		}
 	}
-	for (const size_t& to_erase_tile: to_erase_uset) {
+	for (const size_t& to_erase_tile: to_erase_uset)
+	//for (const size_t& to_erase_tile: to_erase_darr)
+	{
+		//printout("_add_constraint(): Erasing: ",
+		//	nb_pot_elem.contains(to_erase_tile), " ",
+		//	to_erase_tile, "\n");
+		//nb_pot_elem.erase(to_erase_tile);
 		nb_pot_elem.erase(to_erase_tile);
 	}
 
-	if (nb_pot_elem.size() == 0) {
+	//if (nb_pot_elem.size() == 0)
+	if (nb_pot_elem.num_active() == 0) {
 		//_dbg_print();
 		//sleep(1);
 		throw std::runtime_error(sconcat
@@ -875,13 +961,17 @@ void Wfc::_dbg_print() const {
 	for (pos.y=0; pos.y<size_2d().y; ++pos.y) {
 		//printout(pos.y, ": ");
 		for (pos.x=0; pos.x<size_2d().x; ++pos.x) {
-			const auto& pot_elem
+			const PotElem& pot_elem
 				= _baktk_stk.top().potential.at(pos.y).at(pos.x);
-			if (pot_elem.size() == 1) {
+			//if (pot_elem.size() == 1)
+			if (pot_elem.num_active() == 1) {
+				//printout(static_cast<char>
+				//	(mt_darr().at(*pot_elem.begin()).tl_corner()));
 				printout(static_cast<char>
-					(mt_darr().at(*pot_elem.begin()).tl_corner()));
+					(mt_darr().at(*pot_elem.first_set()).tl_corner()));
 			} else {
-				printout(pot_elem.size());
+				//printout(pot_elem.size());
+				printout(pot_elem.num_active());
 			}
 		}
 		printout("\n");

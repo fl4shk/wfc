@@ -17,6 +17,71 @@ namespace wfc {
 //	//Mountain = 'M',
 //};
 using TileUset = std::unordered_set<size_t>;
+class PotElem final {
+public:		// variables
+	//std::unordered_set<size_t> data;
+	//std::vector<std::optional<std::string>> data;
+	std::vector<bool> data;
+public:		// functions
+	inline bool contains(size_t ti) const {
+		return static_cast<bool>(data.at(ti));
+		//return data.contains(ti);
+	}
+	//inline void insert_maybe(size_t ti) {
+	//	if (!contains(ti)) {
+	//		insert(ti);
+	//	}
+	//}
+	//inline void push_back(size_t i) {
+	//}
+	inline void insert(size_t ti) {
+		data.at(ti) = true;
+		//data.at(ti) = "asdf";
+		//data.insert(ti);
+	}
+	inline void erase(size_t ti) {
+		data.at(ti) = false;
+		//data.at(ti) = std::nullopt;
+		//data.erase(data.begin() + ti);
+		//data.erase(ti);
+	}
+	inline size_t num_active() const {
+		size_t ret = 0;
+		for (const auto& ti: data) {
+			if (ti) {
+				++ret;
+			}
+		}
+		return ret;
+		//return data.size();
+	}
+	inline std::optional<size_t> first_set() const {
+		//for (const auto& ti: data) {
+		//	if (ti) {
+		//		return ti;
+		//	}
+		//}
+		for (size_t ti=0; ti<data.size(); ++ti) {
+			if (data.at(ti)) {
+				return ti;
+			}
+		}
+		return std::nullopt;
+		//return *data.begin();
+	}
+};
+inline std::ostream& operator << (
+	std::ostream& os, const PotElem& pot_elem
+) {
+	for (size_t ti=0; ti<pot_elem.data.size(); ++ti) {
+		if (pot_elem.data.at(ti)) {
+			osprintout(os, ti);
+		} else {
+			osprintout(os, "?");
+		}
+	}
+	return os;
+}
 
 class Wfc final {
 public:		// types
@@ -35,7 +100,11 @@ public:		// types
 	//		valid;
 	//};
 	//using PotElem = std::unordered_map<size_t, bool>;
-	using PotElem = std::unordered_set<size_t>;
+	//using PotElem
+	//	//= std::unordered_set<size_t>;
+	//	= std::vector<std::optional<int>>;
+public:		// static funcs
+public:		// types
 	using Potential = std::vector<std::vector<PotElem>>;
 	using PotentialUmap = std::unordered_map<Vec2<size_t>, PotElem>;
 
@@ -145,8 +214,10 @@ public:		// types
 			//if (guess_umap.at(guess_pos).size() == 0) {
 			//	guess_umap.erase(guess_pos);
 			//}
+
+			//guess_darr.at(guess_index).second.erase(guess_ti);
 			guess_darr.at(guess_index).second.erase(guess_ti);
-			if (guess_darr.at(guess_index).second.size() == 0) {
+			if (guess_darr.at(guess_index).second.num_active() == 0) {
 				guess_darr.erase(guess_darr.begin() + guess_index);
 			}
 		}
@@ -172,7 +243,8 @@ private:		// variables
 	std::unordered_map<Rule, double> _r2w_umap;
 
 	// This maps tiles to their weights
-	std::unordered_map<size_t, double> _weight_umap;
+	//std::unordered_map<size_t, double> _weight_umap;
+	std::vector<double> _weight_darr;
 public:		// types
 	using Rng = pcg64;
 	using Ddist = std::discrete_distribution<u64>;
@@ -199,7 +271,8 @@ public:		// functions
 	//GEN_GETTER_BY_VAL(no_overlap);
 	GEN_GETTER_BY_CON_REF(mt_darr);
 	GEN_GETTER_BY_CON_REF(r2w_umap);
-	GEN_GETTER_BY_CON_REF(weight_umap);
+	//GEN_GETTER_BY_CON_REF(weight_umap);
+	GEN_GETTER_BY_CON_REF(weight_darr);
 	//GEN_GETTER_BY_CON_REF(tprops_umap);
 private:		// functions
 	void _learn(const std::vector<std::vector<size_t>>& input_tiles);

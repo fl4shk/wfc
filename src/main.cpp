@@ -147,16 +147,23 @@ int main(int argc, char** argv) {
 		const auto& row = the_wfc.result().at(j);
 		//printout(j, ": ");
 		for (size_t i=0; i<row.size(); ++i) {
-			const auto& uset = row.at(i);
-			if (uset.size() != 1) {
+			const auto& pot_elem = row.at(i);
+			//if (uset.size() != 1)
+			if (pot_elem.num_active() != 1)
+			{
+				//printerr("main(): Eek! ",
+				//	"{", i, ", ", j, "}: ", uset.size(), "\n");
 				printerr("main(): Eek! ",
-					"{", i, ", ", j, "}: ", uset.size(), "\n");
+					"{", i, ", ", j, "}: ", pot_elem.num_active(),
+					"\n");
 				exit(1);
 			}
 			//printout(i32(uset.begin()->first));
 			//printout(uset.begin()->first);
+			//printout(static_cast<char>(the_wfc.mt_darr()
+			//	.at(*uset.begin()).tl_corner()));
 			printout(static_cast<char>(the_wfc.mt_darr()
-				.at(*uset.begin()).tl_corner()));
+				.at(*pot_elem.first_set()).tl_corner()));
 			//for (const auto& item: umap) {
 			//	if (item.second) {
 			//		printout(item.first);
