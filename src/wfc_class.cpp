@@ -21,9 +21,9 @@ Wfc::Wfc(
 	//_no_overlap(s_no_overlap),
 	_rng(s_rng_seed) {
 	//--------
-	#ifdef DEBUG
-	printout("wfc::Wfc::Wfc(): s_rng_seed: ", s_rng_seed, "\n");
-	#endif		// DEBUG
+	//#ifdef DEBUG
+	//printout("wfc::Wfc::Wfc(): s_rng_seed: ", s_rng_seed, "\n");
+	//#endif		// DEBUG
 
 	if (mt_dim() > size_2d().x) {
 		throw std::invalid_argument(sconcat
@@ -339,8 +339,8 @@ void Wfc::_gen() {
 	//_baktk_stk.top().init_guess_umap();
 	_baktk_stk.top().init_guess_darr();
 
-	bool
-		did_pop = false;
+	//bool
+	//	did_pop = false;
 	for (;;) {
 		BaktkStkItem& stk_top = _baktk_stk.top();
 
@@ -352,9 +352,9 @@ void Wfc::_gen() {
 		Vec2<size_t>& guess_pos = stk_top.guess_pos;
 		size_t& guess_ti = stk_top.guess_ti;
 
-		if (did_pop) {
-			did_pop = false;
-		}
+		//if (did_pop) {
+		//	did_pop = false;
+		//}
 
 		//guess_index = rng_run<size_t>(_rng,
 		//	size_t(0), guess_umap.size() - 1);
@@ -430,21 +430,21 @@ void Wfc::_gen() {
 			_propagate(to_push.potential, guess_pos);
 		} catch (const std::exception& e) {
 			// We failed to `_propagate()`.
-			#ifdef DEBUG
-			printout("failed `_propagate()`: ",
-				_baktk_stk.size(),
-				"\n");
-			#endif		// DEBUG
+			//#ifdef DEBUG
+			//printout("failed `_propagate()`: ",
+			//	_baktk_stk.size(),
+			//	"\n");
+			//#endif		// DEBUG
 			//need_pop = true;
 			_baktk_stk.top().erase_guess();
 			// hopefully this works?
 			//if (_baktk_stk.top().guess_umap.size() == 0)
 			if (_baktk_stk.top().guess_darr.size() == 0) {
-				#ifdef DEBUG
-				printout("failed `_propagate()`: ",
-					"doing `_baktk_stk.pop()`\n");
-				#endif		// DEBUG
-				did_pop = true;
+				//#ifdef DEBUG
+				//printout("failed `_propagate()`: ",
+				//	"doing `_baktk_stk.pop()`\n");
+				//#endif		// DEBUG
+				//did_pop = true;
 				_baktk_stk.pop();
 			}
 

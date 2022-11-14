@@ -24,7 +24,8 @@ public:		// variables
 	std::vector<bool> data;
 public:		// functions
 	inline bool contains(size_t ti) const {
-		return static_cast<bool>(data.at(ti));
+		return data.at(ti);
+		//return static_cast<bool>(data.at(ti));
 		//return data.contains(ti);
 	}
 	//inline void insert_maybe(size_t ti) {
