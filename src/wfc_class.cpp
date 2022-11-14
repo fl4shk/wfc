@@ -845,11 +845,11 @@ void Wfc::_add_constraint(
 		= potential.at(neighbor.pos.y).at(neighbor.pos.x);
 	//printout("debug: _add_constraint(): tiles: ", tiles, "\n");
 
-	std::unordered_set<size_t>
-		//tiles,
-		//other_tiles,
-		to_erase_uset;
-	//std::vector<size_t> to_erase_darr;
+	//std::unordered_set<size_t>
+	//	//tiles,
+	//	//other_tiles,
+	//	to_erase_uset;
+	std::vector<size_t> to_erase_darr;
 	//for (size_t i=0; i<raw_tiles.size(); ++i) {
 	//	if (raw_tiles.contains(i)) {
 	//		tiles.insert(i);
@@ -900,23 +900,23 @@ void Wfc::_add_constraint(
 			if (!found) {
 				//printout("_add_constraint(): !found: ",
 				//	other_tile, "\n");
-				to_erase_uset.insert(other_tile);
-				//bool found_other_tile = false;
-				//for (const auto& to_erase: to_erase_darr) {
-				//	if (to_erase == other_tile) {
-				//		found_other_tile = true;
-				//		break;
-				//	}
-				//}
-				//if (!found_other_tile) {
-				//	to_erase_darr.push_back(other_tile);
-				//}
+				//to_erase_uset.insert(other_tile);
+				bool found_other_tile = false;
+				for (const auto& to_erase: to_erase_darr) {
+					if (to_erase == other_tile) {
+						found_other_tile = true;
+						break;
+					}
+				}
+				if (!found_other_tile) {
+					to_erase_darr.push_back(other_tile);
+				}
 				needs_update.push(neighbor.pos);
 			}
 		}
 	}
-	for (const size_t& to_erase_tile: to_erase_uset)
-	//for (const size_t& to_erase_tile: to_erase_darr)
+	//for (const size_t& to_erase_tile: to_erase_uset)
+	for (const size_t& to_erase_tile: to_erase_darr)
 	{
 		//printout("_add_constraint(): Erasing: ",
 		//	nb_pot_elem.contains(to_erase_tile), " ",
