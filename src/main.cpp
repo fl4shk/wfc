@@ -38,9 +38,10 @@ int main(int argc, char** argv) {
 		.add_singleton("--width", "-w", HasArg::Req, true)
 		.add_singleton("--height", "-h", HasArg::Req, true)
 		.add_singleton("--metatile-dim", "-d", HasArg::Req, false)
-		.add_singleton("--no-rotate", "-r", HasArg::None, false)
-		.add_singleton("--no-reflect", "-R", HasArg::None, false)
-		//.add_singleton("--no-overlap", "-o", HasArg::None, false)
+		.add_singleton("--backtrack", "-b", HasArg::None, false)
+		//.add_singleton("--overlap", "-o", HasArg::None, false)
+		.add_singleton("--rotate", "-r", HasArg::None, false)
+		.add_singleton("--reflect", "-R", HasArg::None, false)
 		.add_singleton("--seed", "-s", HasArg::Req, false);
 	if (
 		const auto& ap_ret=ap.parse(argc, argv);
@@ -126,9 +127,10 @@ int main(int argc, char** argv) {
 	}
 
 	const bool
-		no_rotate = ap.has_opts("--no-rotate"),
-		no_reflect = ap.has_opts("--no-reflect");
-		//no_overlap = ap.has_opts("--no-overlap");
+		backtrack = ap.has_opts("--backtrack"),
+		//overlap = ap.has_opts("--overlap"),
+		rotate = ap.has_opts("--rotate"),
+		reflect = ap.has_opts("--reflect");
 
 	u64 rng_seed;
 
@@ -141,7 +143,7 @@ int main(int argc, char** argv) {
 	wfc::Wfc the_wfc
 		(size_2d, mt_dim,
 		input_tiles,
-		no_rotate, no_reflect, //no_overlap,
+		backtrack, rotate, reflect, //overlap,
 		rng_seed);
 	for (size_t j=0; j<the_wfc.result().size(); ++j) {
 		const auto& row = the_wfc.result().at(j);

@@ -232,9 +232,10 @@ private:		// variables
 	size_t 
 		_mt_dim; // metatile dimension
 	bool
-		_no_rotate,
-		_no_reflect;
-		//_no_overlap;
+		_backtrack,
+		//_overlap;
+		_rotate,
+		_reflect;
 	//std::unordered_map<size_t, RuleUset> _rules_umap;
 	//RuleUset _rule_uset;
 
@@ -256,7 +257,9 @@ public:		// functions
 	Wfc(
 		const Vec2<size_t>& s_size_2d, size_t s_mt_dim,
 		const std::vector<std::vector<size_t>>& input_tiles,
-		bool s_no_rotate, bool s_no_reflect, //bool s_no_overlap,
+		bool s_backtrack,
+		//bool s_overlap,
+		bool s_rotate, bool s_reflect,
 		u64 s_rng_seed
 	);
 	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(Wfc);
@@ -267,9 +270,10 @@ public:		// functions
 	GEN_GETTER_BY_CON_REF(mt_dim);
 	//GEN_GETTER_BY_CON_REF(rules_umap);
 	//GEN_GETTER_BY_CON_REF(rule_uset);
-	GEN_GETTER_BY_VAL(no_rotate);
-	GEN_GETTER_BY_VAL(no_reflect);
-	//GEN_GETTER_BY_VAL(no_overlap);
+	GEN_GETTER_BY_VAL(backtrack);
+	//GEN_GETTER_BY_VAL(overlap);
+	GEN_GETTER_BY_VAL(rotate);
+	GEN_GETTER_BY_VAL(reflect);
 	GEN_GETTER_BY_CON_REF(mt_darr);
 	GEN_GETTER_BY_CON_REF(r2w_umap);
 	//GEN_GETTER_BY_CON_REF(weight_umap);

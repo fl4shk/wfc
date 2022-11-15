@@ -9,16 +9,19 @@ Wfc::Wfc() {}
 Wfc::Wfc(
 	const Vec2<size_t>& s_size_2d, size_t s_mt_dim,
 	const std::vector<std::vector<size_t>>& input_tiles,
-	bool s_no_rotate, bool s_no_reflect, //bool s_no_overlap,
+	bool s_backtrack,
+	//bool s_overlap,
+	bool s_rotate, bool s_reflect,
 	u64 s_rng_seed
 ) 
 	: _size_2d(s_size_2d),
 	_mt_dim(s_mt_dim),
 	//_potential(s_size_2d.y,
 	//	std::vector<TileUset>(s_size_2d.x, TileUset())),
-	_no_rotate(s_no_rotate),
-	_no_reflect(s_no_reflect),
-	//_no_overlap(s_no_overlap),
+	_backtrack(s_backtrack),
+	//_overlap(s_overlap),
+	_rotate(s_rotate),
+	_reflect(s_reflect),
 	_rng(s_rng_seed) {
 	//--------
 	//#ifdef DEBUG
@@ -120,16 +123,16 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 					// non-reflected `Metatile`'s weights
 					ext_mt_umap.insert(std::pair(to_insert, item.second));
 				};
-				if (!no_reflect()) {
+				if (reflect()) {
 					do_mt_insert(Metatile(item.first).reflect_x());
 					do_mt_insert(Metatile(item.first).reflect_y());
 					do_mt_insert
 						(Metatile(item.first).reflect_x().reflect_y());
 				}
-				if (!no_rotate()) {
+				if (rotate()) {
 					auto rot90 = Metatile(item.first).rotate_p90();
 					do_mt_insert(rot90);
-					if (!no_reflect()) {
+					if (reflect()) {
 						do_mt_insert(Metatile(rot90).reflect_x());
 						do_mt_insert(Metatile(rot90).reflect_y());
 						do_mt_insert
@@ -138,7 +141,7 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 
 					auto rot180 = Metatile(rot90).rotate_p90();
 					do_mt_insert(rot180);
-					if (!no_reflect()) {
+					if (reflect()) {
 						do_mt_insert(Metatile(rot180).reflect_x());
 						do_mt_insert(Metatile(rot180).reflect_y());
 						do_mt_insert
@@ -147,7 +150,7 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 
 					auto rot270 = Metatile(rot180).rotate_p90();
 					do_mt_insert(rot270);
-					if (!no_reflect()) {
+					if (reflect()) {
 						do_mt_insert(Metatile(rot270).reflect_x());
 						do_mt_insert(Metatile(rot270).reflect_y());
 						do_mt_insert
@@ -332,6 +335,8 @@ void Wfc::_gen() {
 	//	_baktk_stk.push(std::move(to_push));
 	//}
 	//std::optional<PosDarr> least_entropy_pos_darr = std::nullopt;
+	const PotElem orig_pe = _result.front().front();
+
 	_baktk_stk.push(BaktkStkItem
 		{.potential=_result});
 	_baktk_stk.top().least_entropy_pos_darr
@@ -362,36 +367,13 @@ void Wfc::_gen() {
 			size_t(0), guess_darr.size() - 1);
 		stk_top.init_guess_pos();
 		//--------
-		//const auto& prev_to_collapse
-		//	= potential.at(guess_pos.y).at(guess_pos.x);
+		BaktkStkItem to_push;
 
-		//if (prev_to_collapse.size() == 0) {
-		//	//if (_baktk_stk.size() > 1) {
-		//		_baktk_stk.pop();
-		//	//}
-		//	did_pop = true;
-		//	//_baktk_stk.top().erase_guess();
-		//	//if (_baktk_stk.top().guess_umap.size() == 0) {
-		//	//	_baktk_stk.pop();
-		//	//}
-		//	printout("testificate\n");
-		//	continue;
-		//}
-
-		//printout("guess_umap right before stuff with `to_push`:\n");
-		//stk_top.print_guess_umap();
-		//printout("guess_pos: ", guess_pos, "\n");
-		//printout("guess_umap.at(gp).size(): ",
-		//	guess_umap.at(guess_pos).size(),
-		//	"\n");
-
-		//if (guess_umap.at(guess_pos).size() > 0) {
-		//	stk_top.print_guess_umap_at_gp();
-		//}
-		//_dbg_print();
-
-		BaktkStkItem to_push
-			= {.potential=potential};
+		if (backtrack()) {
+			to_push.potential = potential;
+		} else {
+			to_push.potential = std::move(potential);
+		}
 		auto& to_collapse
 			= to_push.potential.at(guess_pos.y).at(guess_pos.x);
 		const CollapseTemps& ct
@@ -407,16 +389,6 @@ void Wfc::_gen() {
 		for (size_t i=0; i<to_collapse.data.size(); ++i) {
 			to_collapse.erase(i);
 		}
-		//to_collapse.clear();
-		//for (size_t i=0; i<old_to_collapse_size; ++i) {
-		//	to_collapse.push_back(std::nullopt);
-		//}
-		//for (size_t ti=0; ti<to_collapse.size(); ++ti) {
-		//	//to_collapse.at(ti) = std::nullopt;
-		//	if (to_collapse.contains(ti)) {
-		//		to_collapse.erase(ti);
-		//	}
-		//}
 
 		const auto& rng_val = ddist(_rng);
 		guess_ti = ct.tile_darr.at(rng_val);
@@ -426,6 +398,7 @@ void Wfc::_gen() {
 		//to_collapse.at(guess_ti) = 1;
 		//printout("to_collapse: ", to_collapse, "\n");
 
+		bool restart = false;
 		try {
 			_propagate(to_push.potential, guess_pos);
 		} catch (const std::exception& e) {
@@ -435,33 +408,74 @@ void Wfc::_gen() {
 			//	_baktk_stk.size(),
 			//	"\n");
 			//#endif		// DEBUG
-			//need_pop = true;
-			_baktk_stk.top().erase_guess();
-			// hopefully this works?
-			//if (_baktk_stk.top().guess_umap.size() == 0)
-			if (_baktk_stk.top().guess_darr.size() == 0) {
+			if (backtrack()) {
+				//need_pop = true;
+				_baktk_stk.top().erase_guess();
+				// hopefully this works?
+				//if (_baktk_stk.top().guess_umap.size() == 0)
+				if (_baktk_stk.top().guess_darr.size() == 0) {
+					//#ifdef DEBUG
+					//printout("failed `_propagate()`: ",
+					//	"doing `_baktk_stk.pop()`\n");
+					//#endif		// DEBUG
+					//did_pop = true;
+					_baktk_stk.pop();
+				}
+
+				continue;
+			} else {
 				//#ifdef DEBUG
-				//printout("failed `_propagate()`: ",
-				//	"doing `_baktk_stk.pop()`\n");
+				//printout("restarting\n");
 				//#endif		// DEBUG
-				//did_pop = true;
-				_baktk_stk.pop();
+				//return;
+				restart = true;
 			}
-
-			continue;
 		}
 
-		auto temp_least_entropy_pos_darr
-			= _calc_least_entropy_pos_darr(to_push.potential);
-		if (!temp_least_entropy_pos_darr) {
-			_result = std::move(to_push.potential);
-			break;
+		//if (backtrack()) {
+		//	//_baktk_stk.top().potential = to_push.potential;
+		//} else { // if (!backtrack())
+		//}
+
+		if (!restart) {
+			auto temp_least_entropy_pos_darr
+				= _calc_least_entropy_pos_darr(to_push.potential);
+			if (!temp_least_entropy_pos_darr) {
+				_result = std::move(to_push.potential);
+				break;
+			}
+			to_push.least_entropy_pos_darr
+				= *temp_least_entropy_pos_darr;
+			//to_push.init_guess_umap();
+			to_push.init_guess_darr();
 		}
-		to_push.least_entropy_pos_darr
-			= *temp_least_entropy_pos_darr;
-		//to_push.init_guess_umap();
-		to_push.init_guess_darr();
-		_baktk_stk.push(std::move(to_push));
+
+		if (backtrack()) {
+			_baktk_stk.push(std::move(to_push));
+		} else {
+			if (!restart) {
+				_baktk_stk.top() = std::move(to_push);
+			} else { // if (restart)
+				//const auto& temp_pe = to_push.potential.front().front();
+				//printout(temp_pe.data.size(), " ",
+				//	temp_pe.num_active(), "\n");
+				//_baktk_stk.push(std::move(to_push));
+				//printout("_dbg_print(): \n");
+				//_dbg_print();
+				//_baktk_stk.pop();
+
+				_baktk_stk.top().potential = Potential(size_2d().y,
+					std::vector<PotElem>(size_2d().x, orig_pe));
+				_baktk_stk.top().least_entropy_pos_darr
+					= *_calc_least_entropy_pos_darr
+					(_baktk_stk.top().potential);
+				_baktk_stk.top().init_guess_darr();
+			}
+		}
+
+		//if (backtrack()) {
+		//} else { // if (restarting)
+		//}
 		//--------
 	}
 
@@ -971,7 +985,11 @@ void Wfc::_dbg_print() const {
 					(mt_darr().at(*pot_elem.first_set()).tl_corner()));
 			} else {
 				//printout(pot_elem.size());
-				printout(pot_elem.num_active());
+				if (pot_elem.num_active() <= 9) {
+					printout(pot_elem.num_active());
+				} else {
+					printout("*");
+				}
 			}
 		}
 		printout("\n");
