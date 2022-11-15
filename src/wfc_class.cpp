@@ -423,7 +423,7 @@ void Wfc::_gen() {
 				}
 
 				continue;
-			} else {
+			} else { // if (!backtrack())
 				//#ifdef DEBUG
 				//printout("restarting\n");
 				//#endif		// DEBUG
@@ -437,7 +437,7 @@ void Wfc::_gen() {
 		//} else { // if (!backtrack())
 		//}
 
-		if (!restart) {
+		if (backtrack()) {
 			auto temp_least_entropy_pos_darr
 				= _calc_least_entropy_pos_darr(to_push.potential);
 			if (!temp_least_entropy_pos_darr) {
@@ -448,13 +448,23 @@ void Wfc::_gen() {
 				= *temp_least_entropy_pos_darr;
 			//to_push.init_guess_umap();
 			to_push.init_guess_darr();
-		}
 
-		if (backtrack()) {
 			_baktk_stk.push(std::move(to_push));
 		} else {
 			if (!restart) {
-				_baktk_stk.top() = std::move(to_push);
+				_baktk_stk.top().potential = std::move(to_push.potential);
+				auto temp_least_entropy_pos_darr
+					= _calc_least_entropy_pos_darr
+					(_baktk_stk.top().potential);
+				if (!temp_least_entropy_pos_darr) {
+					_result = std::move(_baktk_stk.top().potential);
+					break;
+				}
+				_baktk_stk.top().least_entropy_pos_darr
+					= *temp_least_entropy_pos_darr;
+				//to_push.init_guess_umap();
+				_baktk_stk.top().init_guess_darr();
+				//_baktk_stk.top() = std::move(to_push);
 			} else { // if (restart)
 				//const auto& temp_pe = to_push.potential.front().front();
 				//printout(temp_pe.data.size(), " ",
@@ -970,13 +980,13 @@ auto Wfc::_neighbors(
 
 	return ret;
 }
-void Wfc::_dbg_print() const {
+void Wfc::_dbg_print(const BaktkStkItem& bts_item) const {
 	Vec2<size_t> pos;
 	for (pos.y=0; pos.y<size_2d().y; ++pos.y) {
 		//printout(pos.y, ": ");
 		for (pos.x=0; pos.x<size_2d().x; ++pos.x) {
 			const PotElem& pot_elem
-				= _baktk_stk.top().potential.at(pos.y).at(pos.x);
+				= bts_item.potential.at(pos.y).at(pos.x);
 			//if (pot_elem.size() == 1)
 			if (pot_elem.num_active() == 1) {
 				//printout(static_cast<char>

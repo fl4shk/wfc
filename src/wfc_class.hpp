@@ -348,7 +348,10 @@ private:		// functions
 		const Vec2<size_t>& pos
 	) const;
 	//--------
-	void _dbg_print() const;
+	void _dbg_print(const BaktkStkItem& bts_item) const;
+	inline void _dbg_print() const {
+		_dbg_print(_baktk_stk.top());
+	}
 	//--------
 };
 //--------
