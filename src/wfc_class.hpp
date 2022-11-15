@@ -233,13 +233,14 @@ private:		// variables
 		_mt_dim; // metatile dimension
 	bool
 		_backtrack,
-		//_overlap;
+		_overlap,
 		_rotate,
 		_reflect;
 	//std::unordered_map<size_t, RuleUset> _rules_umap;
 	//RuleUset _rule_uset;
 
 	std::vector<Metatile> _mt_darr;
+	//std::unordered_map<size_t, Metatile> _input_to_mt_umap;
 
 	// This maps rules to their weights
 	std::unordered_map<Rule, double> _r2w_umap;
@@ -258,7 +259,7 @@ public:		// functions
 		const Vec2<size_t>& s_size_2d, size_t s_mt_dim,
 		const std::vector<std::vector<size_t>>& input_tiles,
 		bool s_backtrack,
-		//bool s_overlap,
+		bool s_overlap,
 		bool s_rotate, bool s_reflect,
 		u64 s_rng_seed
 	);
@@ -271,7 +272,7 @@ public:		// functions
 	//GEN_GETTER_BY_CON_REF(rules_umap);
 	//GEN_GETTER_BY_CON_REF(rule_uset);
 	GEN_GETTER_BY_VAL(backtrack);
-	//GEN_GETTER_BY_VAL(overlap);
+	GEN_GETTER_BY_VAL(overlap);
 	GEN_GETTER_BY_VAL(rotate);
 	GEN_GETTER_BY_VAL(reflect);
 	GEN_GETTER_BY_CON_REF(mt_darr);

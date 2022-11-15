@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 		.add_singleton("--height", "-h", HasArg::Req, true)
 		.add_singleton("--metatile-dim", "-d", HasArg::Req, false)
 		.add_singleton("--backtrack", "-b", HasArg::None, false)
-		//.add_singleton("--overlap", "-o", HasArg::None, false)
+		.add_singleton("--overlap", "-o", HasArg::None, false)
 		.add_singleton("--rotate", "-r", HasArg::None, false)
 		.add_singleton("--reflect", "-R", HasArg::None, false)
 		.add_singleton("--seed", "-s", HasArg::Req, false);
@@ -128,7 +128,7 @@ int main(int argc, char** argv) {
 
 	const bool
 		backtrack = ap.has_opts("--backtrack"),
-		//overlap = ap.has_opts("--overlap"),
+		overlap = ap.has_opts("--overlap"),
 		rotate = ap.has_opts("--rotate"),
 		reflect = ap.has_opts("--reflect");
 
@@ -143,7 +143,7 @@ int main(int argc, char** argv) {
 	wfc::Wfc the_wfc
 		(size_2d, mt_dim,
 		input_tiles,
-		backtrack, rotate, reflect, //overlap,
+		backtrack, overlap, rotate, reflect,
 		rng_seed);
 	for (size_t j=0; j<the_wfc.result().size(); ++j) {
 		const auto& row = the_wfc.result().at(j);

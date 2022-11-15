@@ -10,16 +10,16 @@ Wfc::Wfc(
 	const Vec2<size_t>& s_size_2d, size_t s_mt_dim,
 	const std::vector<std::vector<size_t>>& input_tiles,
 	bool s_backtrack,
-	//bool s_overlap,
+	bool s_overlap,
 	bool s_rotate, bool s_reflect,
 	u64 s_rng_seed
 ) 
 	: _size_2d(s_size_2d),
-	_mt_dim(s_mt_dim),
+	_mt_dim(s_overlap ? s_mt_dim : 1),
 	//_potential(s_size_2d.y,
 	//	std::vector<TileUset>(s_size_2d.x, TileUset())),
 	_backtrack(s_backtrack),
-	//_overlap(s_overlap),
+	_overlap(s_overlap),
 	_rotate(s_rotate),
 	_reflect(s_reflect),
 	_rng(s_rng_seed) {
@@ -79,6 +79,7 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	//};
 
 	// Insert metatiles
+	std::unordered_map<Metatile, size_t> mt_id_umap;
 	if (std::unordered_map<Metatile, double> mt_umap; true) {
 		auto traverse = [&](size_t j, size_t i) -> Metatile {
 			Metatile ret(mt_dim());
@@ -109,7 +110,8 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 			}
 		}
 
-		if (std::unordered_map<Metatile, double> ext_mt_umap; true) {
+		if (overlap()) {
+			std::unordered_map<Metatile, double> ext_mt_umap;
 			for (const auto& item: mt_umap) {
 				auto do_mt_insert = [&](
 					const Metatile& to_insert
@@ -161,8 +163,10 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 			mt_umap.merge(std::move(ext_mt_umap));
 		}
 
-		if (size_t i=0; true) {
+		//if (size_t i=0; true) {
 			for (const auto& item: mt_umap) {
+				mt_id_umap.insert(std::pair
+					(item.first, _mt_darr.size()));
 				_mt_darr.push_back(item.first);
 				//pot_elem.insert(i);
 				//pot_elem.insert(i);
@@ -171,9 +175,9 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 				//pot_elem.data.push_back("asdf");
 				//pot_elem.insert_maybe(i);
 				_weight_darr.push_back(item.second);
-				++i;
+				//++i;
 			}
-		}
+		//}
 	}
 
 	//printout("Inserting weights\n");
@@ -208,122 +212,157 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 			_r2w_umap.at(rule) += 1.0;
 		}
 	};
-	auto mt_compatible = [this](size_t j, size_t i, Dir d) -> bool {
-		const Metatile
-			& item_j = mt_darr().at(j),
-			& item_i = mt_darr().at(i);
+	if (overlap()) {
+		auto mt_compatible = [this](size_t j, size_t i, Dir d) -> bool {
+			const Metatile
+				& item_j = mt_darr().at(j),
+				& item_i = mt_darr().at(i);
 
-		Vec2<size_t>
-			offset_j{0, 0},
-			offset_i{0, 0},
-			offset_size_2d{0, 0};
+			Vec2<size_t>
+				offset_j{0, 0},
+				offset_i{0, 0},
+				offset_size_2d{0, 0};
 
-		switch (d) {
-		//--------
-		case Dir::Left:
-			offset_i = offset_size_2d = {1, 0};
-			break;
-		case Dir::Top:
-			offset_i = offset_size_2d = {0, 1};
-			break;
-		case Dir::Right:
-			offset_j = offset_size_2d = {1, 0};
-			break;
-		case Dir::Bottom:
-			offset_j = offset_size_2d = {0, 1};
-			break;
-		default:
-			break;
-		//--------
-		}
+			switch (d) {
+			//--------
+			case Dir::Left:
+				offset_i = offset_size_2d = {1, 0};
+				break;
+			case Dir::Top:
+				offset_i = offset_size_2d = {0, 1};
+				break;
+			case Dir::Right:
+				offset_j = offset_size_2d = {1, 0};
+				break;
+			case Dir::Bottom:
+				offset_j = offset_size_2d = {0, 1};
+				break;
+			default:
+				break;
+			//--------
+			}
 
-		Vec2<size_t> loc_pos;
-		for (
-			loc_pos.y=0;
-			loc_pos.y<(mt_dim() - offset_size_2d.y);
-			++loc_pos.y
-		) {
+			Vec2<size_t> loc_pos;
 			for (
-				loc_pos.x=0;
-				loc_pos.x<(mt_dim() - offset_size_2d.x);
-				++loc_pos.x
+				loc_pos.y=0;
+				loc_pos.y<(mt_dim() - offset_size_2d.y);
+				++loc_pos.y
 			) {
-				const Vec2<size_t>
-					pos_j = loc_pos + offset_j,
-					pos_i = loc_pos + offset_i;
+				for (
+					loc_pos.x=0;
+					loc_pos.x<(mt_dim() - offset_size_2d.x);
+					++loc_pos.x
+				) {
+					const Vec2<size_t>
+						pos_j = loc_pos + offset_j,
+						pos_i = loc_pos + offset_i;
 
-				if (item_j.at(pos_j) != item_i.at(pos_i)) {
-					return false;
+					if (item_j.at(pos_j) != item_i.at(pos_i)) {
+						return false;
+					}
+				}
+			}
+
+			return true;
+		};
+		for (size_t j=0; j<mt_darr().size(); ++j) {
+			for (size_t i=0; i<mt_darr().size(); ++i) {
+				if (mt_compatible(j, i, Dir::Left)) {
+					insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Left});
+				}
+				if (mt_compatible(j, i, Dir::Top)) {
+					insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Top});
+				}
+				if (mt_compatible(j, i, Dir::Right)) {
+					insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Right});
+				}
+				if (mt_compatible(j, i, Dir::Bottom)) {
+					insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Bottom});
 				}
 			}
 		}
+	} else { // if (!overlap())
+		for (i32 j=0; j<i32(input_tiles.size()); ++j) {
+			const auto& row = input_tiles.at(j);
+			for (i32 i=0; i<i32(row.size()); ++i) {
+				const auto& item = row.at(i);
+				//auto get_metatile = [&]
+				//auto insert_rule = [&](const Rule& rule) -> void {
+				//	//printout("in insert_rule():\n");
+				//	//if (!rule_uset().contains(rule))
+				//	if (!r2w_umap().contains(rule)) {
+				//		//_rule_uset.insert(rule);
+				//		_r2w_umap.insert(std::pair(rule, 1.0));
+				//	} else { // if (r2w_umap().contains(rule))
+				//		_r2w_umap.at(rule) += 1.0;
+				//	}
+				//};
+				// left
+				if (i > 0) {
+					//printout("i > 0: ");
+					//const Rule rule{item, row.at(i - 1), Dir::Left};
+					Metatile mt0(1), mt1(1);
+					mt0.front() = item;
+					mt1.front() = row.at(i - 1);
+					const Rule rule
+						{.t0=mt_id_umap.at(mt0),
+						.t1=mt_id_umap.at(mt1),
+						.d=Dir::Left};
+					//const Rule rule{row.at(i - 1), item, Dir::Left};
+					insert_rule(rule);
+					insert_rule(rule.reverse());
+				}
+				// top
+				if (j > 0) {
+					//printout("j > 0: ");
+					//const Rule rule{item, input_tiles.at(j - 1).at(i), 
+					//	Dir::Top};
 
-		return true;
-	};
-	for (size_t j=0; j<mt_darr().size(); ++j) {
-		for (size_t i=0; i<mt_darr().size(); ++i) {
-			if (mt_compatible(j, i, Dir::Left)) {
-				insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Left});
-			}
-			if (mt_compatible(j, i, Dir::Top)) {
-				insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Top});
-			}
-			if (mt_compatible(j, i, Dir::Right)) {
-				insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Right});
-			}
-			if (mt_compatible(j, i, Dir::Bottom)) {
-				insert_rule(Rule{.t0=j, .t1=i, .d=Dir::Bottom});
+					Metatile mt0(1), mt1(1);
+					mt0.front() = item;
+					mt1.front() = input_tiles.at(j - 1).at(i);
+					const Rule rule
+						{.t0=mt_id_umap.at(mt0),
+						.t1=mt_id_umap.at(mt1),
+						.d=Dir::Top};
+
+					insert_rule(rule);
+					insert_rule(rule.reverse());
+				}
+				// right
+				if (i + 1 != i32(row.size())) {
+					//printout("i + 1 != i32(row.size()): ");
+					//const Rule rule{item, row.at(i + 1), Dir::Right};
+
+					Metatile mt0(1), mt1(1);
+					mt0.front() = item;
+					mt1.front() = row.at(i + 1);
+					const Rule rule
+						{.t0=mt_id_umap.at(mt0),
+						.t1=mt_id_umap.at(mt1),
+						.d=Dir::Right};
+					insert_rule(rule);
+					insert_rule(rule.reverse());
+				}
+				// bottom
+				if (j + 1 != i32(input_tiles.size())) {
+					//printout("j + 1 != i32(input_tiles.size()): ");
+					//const Rule rule{item, input_tiles.at(j + 1).at(i),
+					//	Dir::Bottom};
+
+					Metatile mt0(1), mt1(1);
+					mt0.front() = item;
+					mt1.front() = input_tiles.at(j + 1).at(i);
+					const Rule rule
+						{.t0=mt_id_umap.at(mt0),
+						.t1=mt_id_umap.at(mt1),
+						.d=Dir::Bottom};
+					insert_rule(rule);
+					insert_rule(rule.reverse());
+				}
 			}
 		}
 	}
-	//for (i32 j=0; j<i32(input_tiles.size()); ++j) {
-	//	const auto& row = input_tiles.at(j);
-	//	for (i32 i=0; i<i32(row.size()); ++i) {
-	//		const auto& item = row.at(i);
-	//		//auto get_metatile = [&]
-	//		auto insert_rule = [&](const Rule& rule) -> void {
-	//			//printout("in insert_rule():\n");
-	//			//if (!rule_uset().contains(rule))
-	//			if (!r2w_umap().contains(rule)) {
-	//				//_rule_uset.insert(rule);
-	//				_r2w_umap.insert(std::pair(rule, 1.0));
-	//			} else { // if (r2w_umap().contains(rule))
-	//				_r2w_umap.at(rule) += 1.0;
-	//			}
-	//		};
-	//		//// left
-	//		//if (i > 0) {
-	//		//	//printout("i > 0: ");
-	//		//	const Rule rule{item, row.at(i - 1), Dir::Left};
-	//		//	//const Rule rule{row.at(i - 1), item, Dir::Left};
-	//		//	insert_rule(rule);
-	//		//	insert_rule(rule.reverse());
-	//		//}
-	//		//// top
-	//		//if (j > 0) {
-	//		//	//printout("j > 0: ");
-	//		//	const Rule rule{item, input_tiles.at(j - 1).at(i), 
-	//		//		Dir::Top};
-	//		//	insert_rule(rule);
-	//		//	insert_rule(rule.reverse());
-	//		//}
-	//		//// right
-	//		//if (i + 1 != i32(row.size())) {
-	//		//	//printout("i + 1 != i32(row.size()): ");
-	//		//	const Rule rule{item, row.at(i + 1), Dir::Right};
-	//		//	insert_rule(rule);
-	//		//	insert_rule(rule.reverse());
-	//		//}
-	//		//// bottom
-	//		//if (j + 1 != i32(input_tiles.size())) {
-	//		//	//printout("j + 1 != i32(input_tiles.size()): ");
-	//		//	const Rule rule{item, input_tiles.at(j + 1).at(i),
-	//		//		Dir::Bottom};
-	//		//	insert_rule(rule);
-	//		//	insert_rule(rule.reverse());
-	//		//}
-	//	}
-	//}
 	//--------
 }
 void Wfc::_gen() {
@@ -398,10 +437,12 @@ void Wfc::_gen() {
 		//to_collapse.at(guess_ti) = 1;
 		//printout("to_collapse: ", to_collapse, "\n");
 
-		bool restart = false;
+		//bool restart = false;
+		bool failed = false;
 		try {
 			_propagate(to_push.potential, guess_pos);
 		} catch (const std::exception& e) {
+			failed = true;
 			// We failed to `_propagate()`.
 			//#ifdef DEBUG
 			//printout("failed `_propagate()`: ",
@@ -428,7 +469,7 @@ void Wfc::_gen() {
 				//printout("restarting\n");
 				//#endif		// DEBUG
 				//return;
-				restart = true;
+				//restart = true;
 			}
 		}
 
@@ -450,8 +491,8 @@ void Wfc::_gen() {
 			to_push.init_guess_darr();
 
 			_baktk_stk.push(std::move(to_push));
-		} else {
-			if (!restart) {
+		} else { // if (!backtrack())
+			if (!failed) {
 				_baktk_stk.top().potential = std::move(to_push.potential);
 				auto temp_least_entropy_pos_darr
 					= _calc_least_entropy_pos_darr
@@ -465,7 +506,7 @@ void Wfc::_gen() {
 				//to_push.init_guess_umap();
 				_baktk_stk.top().init_guess_darr();
 				//_baktk_stk.top() = std::move(to_push);
-			} else { // if (restart)
+			} else { // if (failed)
 				//const auto& temp_pe = to_push.potential.front().front();
 				//printout(temp_pe.data.size(), " ",
 				//	temp_pe.num_active(), "\n");

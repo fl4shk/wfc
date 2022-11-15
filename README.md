@@ -6,7 +6,7 @@ Also, make sure you recurse submodules when cloning.
 
 Example:
 ```
-$ ./wfc -i mountain_range.txt -w 32 -h 32 -d 3
+$ ./wfc -i mountain_range.txt -w 32 -h 32 -d 3 -o
 ^^  &...&           ^^^  &&&&&..
 ^^^ &...&   ^^     ^^^      &&&&
  ^^ &..&&   ^^   ^^^^           

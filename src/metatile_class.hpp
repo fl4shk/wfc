@@ -31,6 +31,9 @@ public:		// functions
 		//return {.x=data().front().size(), .y=data().size()};
 		return {.x=dim(), .y=dim()};
 	}
+	inline size_t& front() {
+		return _data.front().front();
+	}
 	inline size_t& at(const Vec2<size_t>& pos) {
 		return _data.at(pos.y).at(pos.x);
 	}
