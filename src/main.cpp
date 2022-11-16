@@ -142,9 +142,11 @@ int main(int argc, char** argv) {
 
 	wfc::Wfc the_wfc
 		(size_2d, mt_dim,
-		input_tiles,
+		//input_tiles,
 		backtrack, overlap, rotate, reflect,
 		rng_seed);
+	the_wfc.learn(input_tiles);
+	the_wfc.gen();
 	for (size_t j=0; j<the_wfc.result().size(); ++j) {
 		const auto& row = the_wfc.result().at(j);
 		//printout(j, ": ");

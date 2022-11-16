@@ -5,10 +5,62 @@
 
 namespace wfc {
 //--------
+std::vector<Neighbor> calc_neighbors(
+	const Vec2<size_t>& size_2d, const Vec2<size_t>& pos
+) {
+	std::vector<Neighbor> ret;
+
+	if (pos.x > 0) {
+		ret.push_back({.d=Dir::Left, .pos{pos.x - 1, pos.y}});
+	}
+	if (pos.y > 0) {
+		ret.push_back({.d=Dir::Top, .pos{pos.x, pos.y - 1}});
+	}
+	if (pos.x < size_2d.x - size_t(1)) {
+		ret.push_back({.d=Dir::Right, .pos{pos.x + 1, pos.y}});
+	}
+	if (pos.y < size_2d.y - size_t(1)) {
+		ret.push_back({.d=Dir::Bottom, .pos{pos.x, pos.y + 1}});
+	}
+
+	return ret;
+}
+//--------
+void PotElem::_set(
+	Potential& potential, const Vec2<size_t>& pos, size_t ti, bool val
+) {
+	PotElem& self = potential.at(pos.y).at(pos.x);
+	const bool did_contain = self.contains(ti);
+	self.domain.at(ti) = val;
+
+	const std::vector<Neighbor>& neighbors(calc_neighbors
+		(Vec2<size_t>(potential.front().size(), potential.size()), pos));
+	for (const Neighbor& nb: neighbors) {
+		PotElem& nb_pe = potential.at(nb.pos.y).at(nb.pos.x);
+		auto
+			& self_support
+				= self.support_da2d.at(size_t(nb.d)).at(ti),
+			& nb_support
+				= nb_pe.support_da2d.at(size_t(reverse(nb.d))).at(ti);
+		//if (val && !did_contain) {
+		//	++self_support;
+		//	//++nb_support;
+		//} else if (!val && did_contain) {
+		//	--self_support;
+		//	//--nb_support;
+		//}
+		//if (did_contain && self_support == 0) {
+		//	self.domain.at(ti) = false;
+		//} else if (!did_contain && self_support > 0) {
+		//	self.domain.at(ti) = true;
+		//}
+	}
+}
+//--------
 Wfc::Wfc() {}
 Wfc::Wfc(
 	const Vec2<size_t>& s_size_2d, size_t s_mt_dim,
-	const std::vector<std::vector<size_t>>& input_tiles,
+	//const std::vector<std::vector<size_t>>& input_tiles,
 	bool s_backtrack,
 	bool s_overlap,
 	bool s_rotate, bool s_reflect,
@@ -27,6 +79,10 @@ Wfc::Wfc(
 	//#ifdef DEBUG
 	//printout("wfc::Wfc::Wfc(): s_rng_seed: ", s_rng_seed, "\n");
 	//#endif		// DEBUG
+	_result = Potential(size_2d().y,
+		std::vector<PotElem>(size_2d().x, PotElem()));
+	//_orig_state = Potential(size_2d().y,
+	//	std::vector<PotElem>(size_2d().x, PotElem()));
 
 	if (mt_dim() > size_2d().x) {
 		throw std::invalid_argument(sconcat
@@ -40,17 +96,37 @@ Wfc::Wfc(
 			"_mt_dim (", mt_dim(), ") is greater than ",
 			"_size_2d.y (", size_2d().y, ")."));
 	}
-	_learn(input_tiles);
-	_gen();
+	//learn(input_tiles);
+	//gen();
 	//--------
 }
 Wfc::~Wfc() {}
 
-void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
+void Wfc::learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	//--------
+	// It's assumed that `input_tiles` has a small overall size
+	if (input_tiles.size() == 0) {
+		throw std::invalid_argument(sconcat
+			("`input_tiles.size()` is zero"));
+	}
+	//for (const auto& row: input_tiles) 
+	for (size_t j=0; j<input_tiles.size(); ++j) {
+		const auto& row = input_tiles.at(j);
+		if (row.size() == 0) {
+			throw std::invalid_argument(sconcat
+				("input_tiles.at(", j, ").size() is zero"));
+		} else if (j > 0 && row.size() != input_tiles.at(j - 1).size()) {
+			throw std::invalid_argument(sconcat
+				("input_tiles.at(", j, ").size() (", row.size(), ") ",
+				"is not equal to ",
+				"input_tiles.at(", j - 1, ").size() ",
+				"(", input_tiles.at(j - 1).size(), ")"));
+		}
+	}
 	//_tprops_umap.clear();
 	//Potential potential;
 	_result.clear();
+	_orig_state.clear();
 	//_potential.clear();
 	//_rules_umap.clear();
 	//_rule_uset.clear();
@@ -58,7 +134,11 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	_r2w_umap.clear();
 	_weight_darr.clear();
 
-	PotElem pot_elem;
+	//PotElem _default_pe;
+	//if (std::holds_alternative<std::monostate>(_default_pe)) {
+	//	_default_pe = PotElem();
+	//}
+	_default_pe = PotElem();
 
 	// Insert weights
 	//for (const auto& item: mt_darr()) 
@@ -69,7 +149,7 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	//	// Insert weights, so that tiles that appear more often in
 	//	// `input_tiles` have a higher weight
 	//	//const size_t& item = row.at(i);
-	//	pot_elem.insert(item);
+	//	_default_pe.insert(item);
 	//	if (temp_weight_umap.contains(item)) {
 	//		//_weight_umap.at(item) += 3.0;
 	//		temp_weight_umap.at(item) += 1.0;
@@ -166,18 +246,22 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 		//if (size_t i=0; true) {
 			for (const auto& item: mt_umap) {
 				mt_id_umap.insert(std::pair
-					(item.first, _mt_darr.size()));
+					(item.first, mt_darr().size()));
+				//_default_pe.insert(i);
+				//_default_pe.insert(i);
+				//_default_pe.data.push_back(true);
+				//_default_pe.push_back(i);
+				//_default_pe.push_back(mt_darr().size());
+				//_default_pe.append();
+				//_default_pe.data.push_back(1);
+				//_default_pe.data.push_back("asdf");
+				//_default_pe.insert_maybe(i);
 				_mt_darr.push_back(item.first);
-				//pot_elem.insert(i);
-				//pot_elem.insert(i);
-				pot_elem.data.push_back(true);
-				//pot_elem.data.push_back(1);
-				//pot_elem.data.push_back("asdf");
-				//pot_elem.insert_maybe(i);
 				_weight_darr.push_back(item.second);
 				//++i;
 			}
 		//}
+		_default_pe = PotElem(mt_darr().size());
 	}
 
 	//printout("Inserting weights\n");
@@ -188,9 +272,9 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	//		insert_weight(row.at(i);
 	//	}
 	//}
-	//printout("_learn(): `pot_elem`: ");
-	//for (size_t i=0; i<pot_elem.size(); ++i) {
-	//	if (pot_elem.at(i)) {
+	//printout("learn(): `_default_pe`: ");
+	//for (size_t i=0; i<_default_pe.size(); ++i) {
+	//	if (_default_pe.at(i)) {
 	//		printout(i);
 	//	} else {
 	//		printout("?");
@@ -198,7 +282,10 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	//}
 	//printout("\n");
 	_result = Potential(size_2d().y,
-		std::vector<PotElem>(size_2d().x, pot_elem));
+		std::vector<PotElem>(size_2d().x, _default_pe));
+	_orig_state = Potential(size_2d().y,
+		std::vector<PotElem>(size_2d().x, _default_pe));
+	//_result = _orig_state;
 	//_potential_darr_stk.push({std::move(potential)});
 
 	// Insert `Rule`s
@@ -365,7 +452,36 @@ void Wfc::_learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	}
 	//--------
 }
-void Wfc::_gen() {
+void Wfc::copy_knowledge(const Wfc& to_copy) {
+	if (mt_dim() != to_copy.mt_dim()) {
+		throw std::invalid_argument(sconcat
+			("wfc::Wfc::copy_knowledge(): ",
+			"`mt_dim() (", mt_dim(), ") "
+			"!= to_copy.mt_dim() (", to_copy.mt_dim(), ")`"));
+	}
+	if (overlap() != to_copy.overlap()) {
+		throw std::invalid_argument(sconcat
+			("wfc::Wfc::copy_knowledge(): ",
+			"`overlap() (", overlap(), ") "
+			"!= to_copy.overlap() (", to_copy.overlap(), ")`"));
+	}
+	if (rotate() != to_copy.rotate()) {
+		throw std::invalid_argument(sconcat
+			("wfc::Wfc::copy_knowledge(): ",
+			"`rotate() (", rotate(), ") "
+			"!= to_copy.rotate() (", to_copy.rotate(), ")`"));
+	}
+	if (reflect() != to_copy.reflect()) {
+		throw std::invalid_argument(sconcat
+			("wfc::Wfc::copy_knowledge(): ",
+			"`reflect() (", reflect(), ") "
+			"!= to_copy.reflect() (", to_copy.reflect(), ")`"));
+	}
+	_mt_darr = to_copy.mt_darr();
+	_r2w_umap = to_copy.r2w_umap();
+	_weight_darr = to_copy.weight_darr();
+}
+void Wfc::gen() {
 	//while (_gen_iteration()) {
 	//}
 	//if (BaktkStkItem to_push{.potential=_result}; true) {
@@ -374,10 +490,12 @@ void Wfc::_gen() {
 	//	_baktk_stk.push(std::move(to_push));
 	//}
 	//std::optional<PosDarr> least_entropy_pos_darr = std::nullopt;
-	const PotElem orig_pe = _result.front().front();
+	//const PotElem orig_pe = _result.front().front();
 
+	//_baktk_stk.push(BaktkStkItem
+	//	{.potential=_result});
 	_baktk_stk.push(BaktkStkItem
-		{.potential=_result});
+		{.potential=_orig_state});
 	_baktk_stk.top().least_entropy_pos_darr
 		= *_calc_least_entropy_pos_darr(_baktk_stk.top().potential);
 	//_baktk_stk.top().init_guess_umap();
@@ -425,15 +543,17 @@ void Wfc::_gen() {
 		//	//= to_collapse.num_active();
 		//	= to_collapse.data.size();
 		//to_collapse.clear();
-		for (size_t i=0; i<to_collapse.data.size(); ++i) {
-			to_collapse.erase(i);
+		//for (size_t i=0; i<to_collapse.data.size(); ++i)
+		for (size_t i=0; i<default_pe().domain.size(); ++i)
+		{
+			to_collapse.disable(to_push.potential, guess_pos, i);
 		}
 
 		const auto& rng_val = ddist(_rng);
 		guess_ti = ct.tile_darr.at(rng_val);
 		//printout("guess_ti: ", guess_ti, "\n");
 		//to_collapse.insert(guess_ti);
-		to_collapse.insert(guess_ti);
+		to_collapse.enable(to_push.potential, guess_pos, guess_ti);
 		//to_collapse.at(guess_ti) = 1;
 		//printout("to_collapse: ", to_collapse, "\n");
 
@@ -515,8 +635,9 @@ void Wfc::_gen() {
 				//_dbg_print();
 				//_baktk_stk.pop();
 
-				_baktk_stk.top().potential = Potential(size_2d().y,
-					std::vector<PotElem>(size_2d().x, orig_pe));
+				//_baktk_stk.top().potential = Potential(size_2d().y,
+				//	std::vector<PotElem>(size_2d().x, _default_pe));
+				_baktk_stk.top().potential = _orig_state;
 				_baktk_stk.top().least_entropy_pos_darr
 					= *_calc_least_entropy_pos_darr
 					(_baktk_stk.top().potential);
@@ -532,7 +653,45 @@ void Wfc::_gen() {
 
 	//_post_process();
 }
+void Wfc::set_orig_state(const PotentialUmap& to_inject) {
+	//_result = Potential(size_2d().y,
+	//	std::vector<PotElem>(size_2d().x, _default_pe));
+	_orig_state = Potential(size_2d().y,
+		std::vector<PotElem>(size_2d().x, _default_pe));
 
+	for (const auto& item: to_inject) {
+		const auto& pos = item.first;
+		if (
+			pos.x >= size_2d().x
+			|| pos.y >= size_2d().y
+		) {
+			throw std::out_of_range(sconcat
+				("wfc::Wfc::set_orig_state(): position (", pos, ") ",
+				"out of range for size_2d() (", size_2d(), ")."));
+		}
+		orig_state_at(pos) = item.second;
+	}
+}
+
+void Wfc::set_orig_state(PotentialUmap&& to_inject) {
+	//_result = Potential(size_2d().y,
+	//	std::vector<PotElem>(size_2d().x, _default_pe));
+	_orig_state = Potential(size_2d().y,
+		std::vector<PotElem>(size_2d().x, _default_pe));
+
+	for (auto& item: to_inject) {
+		const auto& pos = item.first;
+		if (
+			pos.x >= size_2d().x
+			|| pos.y >= size_2d().y
+		) {
+			throw std::out_of_range(sconcat
+				("wfc::Wfc::set_orig_state(): position (", pos, ") ",
+				"out of range for size_2d() (", size_2d(), ")."));
+		}
+		orig_state_at(pos) = std::move(item.second);
+	}
+}
 //void Wfc::_post_process() {
 //}
 
@@ -722,18 +881,19 @@ auto Wfc::_calc_collapse_temps(
 	//std::unordered_map<size_t, size_t> tid_umap;
 	if (size_t i=0; true) {
 		//for (const auto& item: pot_elem)
-		for (size_t item=0; item<pot_elem.data.size(); ++item) {
-			if (pot_elem.contains(item)) {
-				//ret.weight_darr.push_back(weight_umap().at(item.first));
-				//ret.tile_darr.push_back(item.first);
-				//ret.tid_umap.insert(std::pair(item.first, i));
-				//ret.weight_darr.push_back(weight_umap().at(item));
+		//for (size_t item=0; item<pot_elem.data.size(); ++item)
+		for (size_t ti=0; ti<default_pe().domain.size(); ++ti) {
+			if (pot_elem.contains(ti)) {
+				//ret.weight_darr.push_back(weight_umap().at(ti.first));
+				//ret.tile_darr.push_back(ti.first);
+				//ret.tid_umap.insert(std::pair(ti.first, i));
+				//ret.weight_darr.push_back(weight_umap().at(ti));
 				ret.modded_weight_darr.push_back(_calc_modded_weight
-					(potential, pos, item));
+					(potential, pos, ti));
 				//ret.modded_weight_darr.push_back(_calc_modded_weight
-				//	(pot_umap, pos, item));
-				ret.tile_darr.push_back(item);
-				ret.tid_umap.insert(std::pair(item, i));
+				//	(pot_umap, pos, ti));
+				ret.tile_darr.push_back(ti);
+				ret.tid_umap.insert(std::pair(ti, i));
 				++i;
 			}
 		}
@@ -830,7 +990,8 @@ auto Wfc::_calc_least_entropy_pos_darr(
 			//for (const auto& tile: tiles)
 			//for (const auto& weight: ct.weight_darr)
 			//for (const auto& tile: tiles) 
-			for (size_t ti=0; ti<tiles.data.size(); ++ti) {
+			//for (size_t ti=0; ti<tiles.data.size(); ++ti)
+			for (size_t ti=0; ti<default_pe().domain.size(); ++ti) {
 				if (tiles.contains(ti)) {
 					//const double& tile_weight = weight_umap()
 					//	.at(ti.first);
@@ -928,9 +1089,14 @@ void Wfc::_add_constraint(
 
 	//for (const size_t& other_tile: nb_pot_elem) 
 	//for (const size_t& other_tile: other_tiles) 
+	//for (
+	//	size_t other_tile=0;
+	//	other_tile<nb_pot_elem.data.size();
+	//	++other_tile
+	//)
 	for (
 		size_t other_tile=0;
-		other_tile<nb_pot_elem.data.size();
+		other_tile<default_pe().domain.size();
 		++other_tile
 	) {
 		//if (nb_pot_elem.at(other_tile))
@@ -939,9 +1105,14 @@ void Wfc::_add_constraint(
 			bool found = false;
 			//for (const size_t& curr_tile: ct.tile_darr)
 			//for (const size_t& curr_tile: tiles) 
+			//for (
+			//	size_t curr_tile=0;
+			//	curr_tile<tiles.data.size();
+			//	++curr_tile
+			//)
 			for (
 				size_t curr_tile=0;
-				curr_tile<tiles.data.size();
+				curr_tile<default_pe().domain.size();
 				++curr_tile
 			) {
 				if (
@@ -987,7 +1158,7 @@ void Wfc::_add_constraint(
 		//	nb_pot_elem.contains(to_erase_tile), " ",
 		//	to_erase_tile, "\n");
 		//nb_pot_elem.erase(to_erase_tile);
-		nb_pot_elem.erase(to_erase_tile);
+		nb_pot_elem.disable(potential, neighbor.pos, to_erase_tile);
 	}
 
 	//if (nb_pot_elem.size() == 0)
@@ -1000,26 +1171,6 @@ void Wfc::_add_constraint(
 	}
 
 	//return changed;
-}
-auto Wfc::_neighbors(
-	const Vec2<size_t>& pos
-) const -> std::vector<Neighbor> {
-	std::vector<Neighbor> ret;
-
-	if (pos.x > 0) {
-		ret.push_back({.d=Dir::Left, .pos{pos.x - 1, pos.y}});
-	}
-	if (pos.y > 0) {
-		ret.push_back({.d=Dir::Top, .pos{pos.x, pos.y - 1}});
-	}
-	if (pos.x < size_2d().x - size_t(1)) {
-		ret.push_back({.d=Dir::Right, .pos{pos.x + 1, pos.y}});
-	}
-	if (pos.y < size_2d().y - size_t(1)) {
-		ret.push_back({.d=Dir::Bottom, .pos{pos.x, pos.y + 1}});
-	}
-
-	return ret;
 }
 void Wfc::_dbg_print(const BaktkStkItem& bts_item) const {
 	Vec2<size_t> pos;

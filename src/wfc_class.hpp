@@ -17,65 +17,108 @@ namespace wfc {
 //	//Mountain = 'M',
 //};
 using TileUset = std::unordered_set<size_t>;
+
+class PotElem;
+
+using Potential = std::vector<std::vector<PotElem>>;
+using PotentialUmap = std::unordered_map<Vec2<size_t>, PotElem>;
+
+//using Neighbor = std::pair<Dir, Vec2<size_t>>;
+class Neighbor final {
+public:		// variables
+	// `d` is the incoming direction when in `_add_constraint()`
+	Dir d; 
+	Vec2<size_t> pos;
+};
+std::vector<Neighbor> calc_neighbors(
+	const Vec2<size_t>& size_2d, const Vec2<size_t>& pos
+);
+//--------
 class PotElem final {
+public:		// types
+	using SupportDa2d = std::vector<std::vector<size_t>>;
 public:		// variables
 	//std::unordered_set<size_t> data;
 	//std::vector<std::optional<std::string>> data;
-	std::vector<bool> data;
+	std::vector<bool> domain;
+	SupportDa2d support_da2d;
+	//std::unordered_map<Dir, std::vector<size_t>> support_umap;
 public:		// functions
+	inline PotElem() = default;
+	inline PotElem(size_t size) {
+		domain = std::vector<bool>(size, true);
+		support_da2d = SupportDa2d(size_t(Dir::Lim),
+			std::vector<size_t>(size, size));
+	}
+	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(PotElem);
+	inline ~PotElem() = default;
 	inline bool contains(size_t ti) const {
-		return data.at(ti);
-		//return static_cast<bool>(data.at(ti));
-		//return data.contains(ti);
+		return domain.at(ti);
+		//return static_cast<bool>(domain.at(ti));
+		//return domain.contains(ti);
 	}
 	//inline void insert_maybe(size_t ti) {
 	//	if (!contains(ti)) {
 	//		insert(ti);
 	//	}
 	//}
-	//inline void push_back(size_t i) {
+	//inline void append() {
+	//	domain.push_back(true);
 	//}
-	inline void insert(size_t ti) {
-		data.at(ti) = true;
-		//data.at(ti) = "asdf";
-		//data.insert(ti);
+private:		// static functions
+	static void _set(
+		Potential& potential, const Vec2<size_t>& pos, size_t ti, bool val
+	);
+public:		// static functions
+	//inline void enable(size_t ti) {
+	//	domain.at(ti)
+	//		= true;
+	//		//= val;
+	//	//domain.at(ti) = "asdf";
+	//	//domain.insert(ti);
+	//}
+	//inline void disable(size_t ti) {
+	//	domain.at(ti) = false;
+	//	//domain.at(ti) = std::nullopt;
+	//	//domain.erase(domain.begin() + ti);
+	//	//domain.erase(ti);
+	//}
+	static inline void enable(
+		Potential& potential, const Vec2<size_t>& pos, size_t ti
+	) {
+		_set(potential, pos, ti, true);
 	}
-	inline void erase(size_t ti) {
-		data.at(ti) = false;
-		//data.at(ti) = std::nullopt;
-		//data.erase(data.begin() + ti);
-		//data.erase(ti);
+	static inline void disable(
+		Potential& potential, const Vec2<size_t>& pos, size_t ti
+	) {
+		_set(potential, pos, ti, false);
 	}
+public:		// functions
 	inline size_t num_active() const {
 		size_t ret = 0;
-		for (const auto& ti: data) {
+		for (const auto& ti: domain) {
 			if (ti) {
 				++ret;
 			}
 		}
 		return ret;
-		//return data.size();
+		//return domain.size();
 	}
 	inline std::optional<size_t> first_set() const {
-		//for (const auto& ti: data) {
-		//	if (ti) {
-		//		return ti;
-		//	}
-		//}
-		for (size_t ti=0; ti<data.size(); ++ti) {
-			if (data.at(ti)) {
+		for (size_t ti=0; ti<domain.size(); ++ti) {
+			if (domain.at(ti)) {
 				return ti;
 			}
 		}
 		return std::nullopt;
-		//return *data.begin();
+		//return *domain.begin();
 	}
 };
 inline std::ostream& operator << (
 	std::ostream& os, const PotElem& pot_elem
 ) {
-	for (size_t ti=0; ti<pot_elem.data.size(); ++ti) {
-		if (pot_elem.data.at(ti)) {
+	for (size_t ti=0; ti<pot_elem.domain.size(); ++ti) {
+		if (pot_elem.domain.at(ti)) {
 			osprintout(os, ti);
 		} else {
 			osprintout(os, "?");
@@ -106,9 +149,6 @@ public:		// types
 	//	= std::vector<std::optional<int>>;
 public:		// static funcs
 public:		// types
-	using Potential = std::vector<std::vector<PotElem>>;
-	using PotentialUmap = std::unordered_map<Vec2<size_t>, PotElem>;
-
 	//// "Tprops" is short for "tile properties"
 	//class Tprops final {
 	//public:		// variables
@@ -217,25 +257,31 @@ public:		// types
 			//}
 
 			//guess_darr.at(guess_index).second.erase(guess_ti);
-			guess_darr.at(guess_index).second.erase(guess_ti);
+			guess_darr.at(guess_index).second.disable
+				(potential, guess_pos, guess_ti);
 			if (guess_darr.at(guess_index).second.num_active() == 0) {
 				guess_darr.erase(guess_darr.begin() + guess_index);
 			}
 		}
 	};
 private:		// variables
-	Potential _result;
 	//std::stack<std::vector<Potential>> _potential_darr_stk;
 	std::stack<BaktkStkItem> _baktk_stk; // for backtracking
+	PotElem _default_pe;
+	//std::variant<std::monostate, PotElem, PotentialUmap>
+	//	_orig_pe_etc = std::monostate();
+	Potential
+		_result,
+		_orig_state;
 	Vec2<size_t>
 		_size_2d;
 	size_t 
-		_mt_dim; // metatile dimension
+		_mt_dim = 1; // metatile dimension
 	bool
-		_backtrack,
-		_overlap,
-		_rotate,
-		_reflect;
+		_backtrack = false,
+		_overlap = false,
+		_rotate = false,
+		_reflect = false;
 	//std::unordered_map<size_t, RuleUset> _rules_umap;
 	//RuleUset _rule_uset;
 
@@ -256,8 +302,9 @@ private:		// variables
 public:		// functions
 	Wfc();
 	Wfc(
-		const Vec2<size_t>& s_size_2d, size_t s_mt_dim,
-		const std::vector<std::vector<size_t>>& input_tiles,
+		const Vec2<size_t>& s_size_2d,
+		size_t s_mt_dim,
+		//const std::vector<std::vector<size_t>>& input_tiles,
 		bool s_backtrack,
 		bool s_overlap,
 		bool s_rotate, bool s_reflect,
@@ -265,8 +312,28 @@ public:		// functions
 	);
 	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(Wfc);
 	~Wfc();
+	void learn(const std::vector<std::vector<size_t>>& input_tiles);
+	void copy_knowledge(const Wfc& to_copy);
+	void gen();
+	void set_orig_state(const PotentialUmap& to_inject);
+	void set_orig_state(PotentialUmap&& to_inject);
 
+	inline PotElem& result_at(const Vec2<size_t>& pos) {
+		return _result.at(pos.y).at(pos.x);
+	}
+	inline const PotElem& result_at(const Vec2<size_t>& pos) const {
+		return _result.at(pos.y).at(pos.x);
+	}
+	inline PotElem& orig_state_at(const Vec2<size_t>& pos) {
+		return _orig_state.at(pos.y).at(pos.x);
+	}
+	inline const PotElem& orig_state_at(const Vec2<size_t>& pos) const {
+		return _orig_state.at(pos.y).at(pos.x);
+	}
+
+	GEN_GETTER_BY_CON_REF(default_pe);
 	GEN_GETTER_BY_CON_REF(result);
+	GEN_GETTER_BY_CON_REF(orig_state);
 	GEN_GETTER_BY_CON_REF(size_2d);
 	GEN_GETTER_BY_CON_REF(mt_dim);
 	//GEN_GETTER_BY_CON_REF(rules_umap);
@@ -281,8 +348,6 @@ public:		// functions
 	GEN_GETTER_BY_CON_REF(weight_darr);
 	//GEN_GETTER_BY_CON_REF(tprops_umap);
 private:		// functions
-	void _learn(const std::vector<std::vector<size_t>>& input_tiles);
-	void _gen();
 	//void _post_process();
 	//--------
 	//bool _gen_outer_iteration();
@@ -325,13 +390,6 @@ private:		// functions
 		const Potential& potential
 	);
 	//--------
-	//using Neighbor = std::pair<Dir, Vec2<size_t>>;
-	class Neighbor final {
-	public:		// variables
-		// `d` is the incoming direction when in `_add_constraint()`
-		Dir d; 
-		Vec2<size_t> pos;
-	};
 	//--------
 	void _propagate(
 		Potential& potential,
@@ -344,10 +402,11 @@ private:		// functions
 		std::queue<Vec2<size_t>>& needs_update
 		//std::stack<Vec2<size_t>>& needs_update
 	);
-	//--------
-	std::vector<Neighbor> _neighbors(
+	inline std::vector<Neighbor> _neighbors(
 		const Vec2<size_t>& pos
-	) const;
+	) const {
+		return calc_neighbors(size_2d(), pos);
+	}
 	//--------
 	void _dbg_print(const BaktkStkItem& bts_item) const;
 	inline void _dbg_print() const {

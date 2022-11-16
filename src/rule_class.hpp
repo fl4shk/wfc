@@ -14,6 +14,7 @@ enum class Dir: u32 {
 	Right = 2,
 	Bottom = 3,
 	//Bad = 4,
+	Lim = 4,
 };
 
 constexpr inline Dir reverse(Dir d) {
