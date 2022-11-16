@@ -42,6 +42,23 @@ void PotElem::_set(
 				= self.support_da2d.at(size_t(nb.d)).at(ti),
 			& nb_support
 				= nb_pe.support_da2d.at(size_t(reverse(nb.d))).at(ti);
+		if (val && !did_contain) {
+			++self_support;
+			++nb_support;
+		} else if (!val && did_contain) {
+			--self_support;
+			--nb_support;
+		}
+		if (self_support == 0) {
+			self.domain.at(ti) = false;
+		} //else {
+		//	self.domain.at(ti) = true;
+		//}
+		if (nb_support == 0) {
+			nb_pe.domain.at(ti) = false;
+		} //else {
+		//	nb_pe.domain.at(ti) = true;
+		//}
 		//if (val && !did_contain) {
 		//	++self_support;
 		//	//++nb_support;
