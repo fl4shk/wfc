@@ -34,24 +34,40 @@ int main(int argc, char** argv) {
 	//}
 	ArgParser ap;
 	ap
-		.add_singleton("--input-file", "-i", HasArg::Req, true)
+		.add_singleton("--input-file", "-i", HasArg::Req, true,
+			sconcat
+				("\n\tName of the input file containing a 2D array of ",
+				"characters to learn from.\n\t"))
 
-		.add_singleton("--width", "-w", HasArg::Req, true)
-		.add_singleton("--height", "-h", HasArg::Req, true)
-		.add_singleton("--metatile-dim", "-d", HasArg::Req, false)
+		.add_singleton("--chunk-width", "-w", HasArg::Req, true, "")
+		.add_singleton("--chunk-height", "-h", HasArg::Req, true, "")
+		.add_singleton("--num-chunks-x", "-W", HasArg::Req, false,
+			"\n\tNumber of chunks in the x dimension. Defaults to 1.\n\t")
+		.add_singleton("--num-chunks-y", "-H", HasArg::Req, false,
+			"\n\tNumber of chunks in the y dimension. Defaults to 1.\n\t")
 
-		//.add_singleton("--chunk-width", "-W", HasArg::Req, false)
-		//.add_singleton("--chunk-height", "-H", HasArg::Req, false)
-		//.add_singleton("--num-chunks", "-n", HasArg::Req, false)
+		.add_singleton("--metatile-dim", "-d", HasArg::Req, false,
+			sconcat
+				("\n\tWidth AND height of multi-tile objects ",
+					"(metatiles). ",
+				"\n\tThis option only takes effect with --overlap.",
+				"\n\tDefaults to 1.\n\t"))
 
-		.add_singleton("--backtrack", "-b", HasArg::None, false)
-		.add_singleton("--overlap", "-o", HasArg::None, false)
-		.add_singleton("--rotate", "-r", HasArg::None, false)
-		.add_singleton("--reflect", "-R", HasArg::None, false)
-		.add_singleton("--seed", "-s", HasArg::Req, false);
+		.add_singleton("--backtrack", "-b", HasArg::None, false,
+			sconcat
+				("\n\tPerform backtracking instead of restarting upon a "
+				"propagate fail.\n\t"))
+		.add_singleton("--overlap", "-o", HasArg::None, false,
+			"\n\tUse the overlapping model, which involves metatiles.\n\t")
+		.add_singleton("--rotate", "-r", HasArg::None, false,
+			"\n\tRotate metatiles.\n\t")
+		.add_singleton("--reflect", "-R", HasArg::None, false,
+			"\n\tReflect metatiles.\n\t")
+		.add_singleton("--seed", "-s", HasArg::Req, false,
+			"\n\tRNG seed. Mainly useful for debugging the program.\n\t");
 	if (
 		const auto& ap_ret=ap.parse(argc, argv);
-		ap_ret.fail() || ap_ret.index != argc
+		ap_ret.fail() || ap_ret.index != argc || argc == 1
 	) {
 		//printerr("Error: invalid arguments\n");
 		printerr(ap.help_msg(argc, argv));
@@ -109,26 +125,57 @@ int main(int argc, char** argv) {
 	//}
 
 	static constexpr size_t
-		MIN_OUTPUT_DIM = 1,
-		MAX_OUTPUT_DIM
+		MIN_CHUNK_DIM = 1,
+		MAX_CHUNK_DIM
 			= 32;
 			//= 64;
 
-	Vec2<size_t> size_2d;
-	inv_sconcat(ap.at("-w", 0).val, size_2d.x);
-	if (size_2d.x < MIN_OUTPUT_DIM || size_2d.x > MAX_OUTPUT_DIM) {
-		printerr("`width` (", size_2d.x, ") must be in the ",
-			"range [", MIN_OUTPUT_DIM, ", ", MAX_OUTPUT_DIM, "]\n");
+	Vec2<size_t> chunk_size_2d;
+	inv_sconcat(ap.at("-w", 0).val, chunk_size_2d.x);
+	if (chunk_size_2d.x < MIN_CHUNK_DIM || chunk_size_2d.x > MAX_CHUNK_DIM) {
+		printerr("`chunk-width` (", chunk_size_2d.x, ") must be in the ",
+			"range [", MIN_CHUNK_DIM, ", ", MAX_CHUNK_DIM, "].\n");
+		exit(1);
 	}
-	inv_sconcat(ap.at("-h", 0).val, size_2d.y);
-	if (size_2d.y < MIN_OUTPUT_DIM || size_2d.y > MAX_OUTPUT_DIM) {
-		printerr("`height` (", size_2d.y, ") must be in the ",
-			"range [", MIN_OUTPUT_DIM, ", ", MAX_OUTPUT_DIM, "]\n");
+	inv_sconcat(ap.at("-h", 0).val, chunk_size_2d.y);
+	if (chunk_size_2d.y < MIN_CHUNK_DIM || chunk_size_2d.y > MAX_CHUNK_DIM) {
+		printerr("`chunk-height` (", chunk_size_2d.y, ") must be in the ",
+			"range [", MIN_CHUNK_DIM, ", ", MAX_CHUNK_DIM, "].\n");
+		exit(1);
+	}
+
+	static constexpr size_t
+		MIN_NUM_CHUNKS_DIM = 1,
+		MAX_NUM_CHUNKS_DIM = 4;
+	Vec2<size_t> num_chunks_2d(1, 1);
+	if (ap.has_opts("--num-chunks-x")) {
+		inv_sconcat(ap.at("--num-chunks-x", 0).val, num_chunks_2d.x);
+		if (
+			num_chunks_2d.x < MIN_NUM_CHUNKS_DIM
+			|| num_chunks_2d.x > MAX_NUM_CHUNKS_DIM
+		) {
+			printerr("`num-chunks-x` (", num_chunks_2d.x, ") must be in ",
+				"the range ",
+				"[", MIN_NUM_CHUNKS_DIM, ", ", MAX_NUM_CHUNKS_DIM, "].\n");
+			exit(1);
+		}
+	}
+	if (ap.has_opts("--num-chunks-y")) {
+		inv_sconcat(ap.at("--num-chunks-y", 0).val, num_chunks_2d.y);
+		if (
+			num_chunks_2d.y < MIN_NUM_CHUNKS_DIM
+			|| num_chunks_2d.y > MAX_NUM_CHUNKS_DIM
+		) {
+			printerr("`num-chunks-y` (", num_chunks_2d.y, ") must be in ",
+				"the range ",
+				"[", MIN_NUM_CHUNKS_DIM, ", ", MAX_NUM_CHUNKS_DIM, "].\n");
+			exit(1);
+		}
 	}
 
 	//Vec2<size_t> mt_size_2d(1, 1);
 	size_t mt_dim = 1;
-	if (ap.has_opts("-d")) {
+	if (ap.has_opts("--metatile-dim")) {
 		inv_sconcat(ap.at("-d", 0).val, mt_dim);
 	}
 
@@ -147,7 +194,8 @@ int main(int argc, char** argv) {
 	}
 
 	wfc::Wfc the_wfc
-		(size_2d, mt_dim,
+		(chunk_size_2d, num_chunks_2d,
+		mt_dim,
 		//input_tiles,
 		backtrack, overlap, rotate, reflect,
 		rng_seed);

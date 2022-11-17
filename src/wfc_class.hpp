@@ -31,7 +31,7 @@ public:		// variables
 	Vec2<size_t> pos;
 };
 std::vector<Neighbor> calc_neighbors(
-	const Vec2<size_t>& size_2d, const Vec2<size_t>& pos
+	const Vec2<size_t>& full_size_2d, const Vec2<size_t>& pos
 );
 //--------
 class PotElem final {
@@ -266,7 +266,7 @@ public:		// types
 	};
 private:		// variables
 	//std::stack<std::vector<Potential>> _potential_darr_stk;
-	std::stack<BaktkStkItem> _baktk_stk; // for backtracking
+	std::vector<BaktkStkItem> _baktk_stk; // for backtracking
 	PotElem _default_pe;
 	//std::variant<std::monostate, PotElem, PotentialUmap>
 	//	_orig_pe_etc = std::monostate();
@@ -274,7 +274,9 @@ private:		// variables
 		_result,
 		_orig_state;
 	Vec2<size_t>
-		_size_2d;
+		_chunk_size_2d,
+		_num_chunks_2d,
+		_full_size_2d;
 	size_t 
 		_mt_dim = 1; // metatile dimension
 	bool
@@ -302,7 +304,8 @@ private:		// variables
 public:		// functions
 	Wfc();
 	Wfc(
-		const Vec2<size_t>& s_size_2d,
+		const Vec2<size_t>& s_chunk_size_2d,
+		const Vec2<size_t>& s_num_chunks_2d,
 		size_t s_mt_dim,
 		//const std::vector<std::vector<size_t>>& input_tiles,
 		bool s_backtrack,
@@ -330,11 +333,18 @@ public:		// functions
 	inline const PotElem& orig_state_at(const Vec2<size_t>& pos) const {
 		return _orig_state.at(pos.y).at(pos.x);
 	}
+	//inline Vec2<size_t> full_size_2d() const {
+	//	return Vec2<size_t>
+	//		(chunk_size_2d().x * num_chunks_2d().x,
+	//		chunk_size_2d().y * num_chunks_2d().y);
+	//}
 
 	GEN_GETTER_BY_CON_REF(default_pe);
 	GEN_GETTER_BY_CON_REF(result);
 	GEN_GETTER_BY_CON_REF(orig_state);
-	GEN_GETTER_BY_CON_REF(size_2d);
+	GEN_GETTER_BY_CON_REF(chunk_size_2d);
+	GEN_GETTER_BY_CON_REF(num_chunks_2d);
+	GEN_GETTER_BY_CON_REF(full_size_2d);
 	GEN_GETTER_BY_CON_REF(mt_dim);
 	//GEN_GETTER_BY_CON_REF(rules_umap);
 	//GEN_GETTER_BY_CON_REF(rule_uset);
@@ -387,7 +397,7 @@ private:		// functions
 	//--------
 	//std::optional<Vec2<size_t>> _rand_pos_w_least_entropy();
 	std::optional<PosDarr> _calc_least_entropy_pos_darr(
-		const Potential& potential
+		const Potential& potential, const Vec2<size_t>& chunk_pos
 	);
 	//--------
 	//--------
@@ -405,12 +415,33 @@ private:		// functions
 	inline std::vector<Neighbor> _neighbors(
 		const Vec2<size_t>& pos
 	) const {
-		return calc_neighbors(size_2d(), pos);
+		return calc_neighbors(full_size_2d(), pos);
+	}
+	//--------
+	inline void copy_chunk(
+		Potential& output, const Potential& to_copy,
+		const Vec2<size_t>& chunk_pos
+	) {
+		Vec2<size_t> pos;
+		for (
+			pos.y=chunk_pos.y * chunk_size_2d().y;
+			pos.y<(chunk_pos.y + 1) * chunk_size_2d().y;
+			++pos.y
+		) {
+			for (
+				pos.x=chunk_pos.x * chunk_size_2d().x;
+				pos.x<(chunk_pos.x + 1) * chunk_size_2d().x;
+				++pos.x
+			) {
+				output.at(pos.y).at(pos.x)
+					= to_copy.at(pos.y).at(pos.x);
+			}
+		}
 	}
 	//--------
 	void _dbg_print(const Potential& potential) const;
 	inline void _dbg_print() const {
-		_dbg_print(_baktk_stk.top().potential);
+		_dbg_print(_baktk_stk.back().potential);
 	}
 	//--------
 };
