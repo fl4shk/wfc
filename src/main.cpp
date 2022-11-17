@@ -105,8 +105,8 @@ int main(int argc, char** argv) {
 	static constexpr size_t
 		MIN_OUTPUT_DIM = 1,
 		MAX_OUTPUT_DIM
-			//= 32;
-			= 64;
+			= 32;
+			//= 64;
 
 	Vec2<size_t> size_2d;
 	inv_sconcat(ap.at("-w", 0).val, size_2d.x);

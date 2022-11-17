@@ -30,48 +30,68 @@ void PotElem::_set(
 	Potential& potential, const Vec2<size_t>& pos, size_t ti, bool val
 ) {
 	PotElem& self = potential.at(pos.y).at(pos.x);
-	const bool did_contain = self.contains(ti);
+	//const bool did_contain = self.contains(ti);
 	self.domain.at(ti) = val;
 
-	const std::vector<Neighbor>& neighbors(calc_neighbors
-		(Vec2<size_t>(potential.front().size(), potential.size()), pos));
-	for (const Neighbor& nb: neighbors) {
-		PotElem& nb_pe = potential.at(nb.pos.y).at(nb.pos.x);
-		auto
-			& self_support
-				= self.support_da2d.at(size_t(nb.d)).at(ti),
-			& nb_support
-				= nb_pe.support_da2d.at(size_t(reverse(nb.d))).at(ti);
-		if (val && !did_contain) {
-			++self_support;
-			++nb_support;
-		} else if (!val && did_contain) {
-			--self_support;
-			--nb_support;
-		}
-		if (self_support == 0) {
-			self.domain.at(ti) = false;
-		} //else {
-		//	self.domain.at(ti) = true;
-		//}
-		if (nb_support == 0) {
-			nb_pe.domain.at(ti) = false;
-		} //else {
-		//	nb_pe.domain.at(ti) = true;
-		//}
-		//if (val && !did_contain) {
-		//	++self_support;
-		//	//++nb_support;
-		//} else if (!val && did_contain) {
-		//	--self_support;
-		//	//--nb_support;
-		//}
-		//if (did_contain && self_support == 0) {
-		//	self.domain.at(ti) = false;
-		//} else if (!did_contain && self_support > 0) {
-		//	self.domain.at(ti) = true;
-		//}
-	}
+	//const std::vector<Neighbor>& neighbors(calc_neighbors
+	//	(Vec2<size_t>(potential.front().size(), potential.size()), pos));
+	//for (const Neighbor& nb: neighbors) {
+	//	PotElem& nb_pe = potential.at(nb.pos.y).at(nb.pos.x);
+	//	auto
+	//		& self_support
+	//			= self.support_da2d.at(size_t(nb.d)).at(ti),
+	//		& nb_support
+	//			= nb_pe.support_da2d.at(size_t(reverse(nb.d))).at(ti);
+	//	if (val && !did_contain) {
+	//		++self_support;
+	//		++nb_support;
+	//	} else if (!val && did_contain) {
+	//		--self_support;
+	//		--nb_support;
+	//		//printout("!val && did_contain: ",
+	//		//	ti, "; ",
+	//		//	pos, " ", nb.pos, "; ",
+	//		//	self_support, " ", nb_support,
+	//		//	"\n");
+	//		//if (self_support == 0) {
+	//		//	//printout("self_support == 0\n");
+	//		//	self.domain.at(ti) = false;
+	//		//} //else {
+	//		////	self.domain.at(ti) = true;
+	//		////}
+	//		//if (nb_support == 0) {
+	//		//	//printout("nb_support == 0\n");
+	//		//	nb_pe.domain.at(ti) = false;
+	//		//} //else {
+	//		////	nb_pe.domain.at(ti) = true;
+	//		////}
+	//	}
+	//	if (self_support == 0) {
+	//		//printout("self_support == 0\n");
+	//		self.domain.at(ti) = false;
+	//	} else {
+	//		self.domain.at(ti) = true;
+	//	}
+	//	if (nb_support == 0) {
+	//		//printout("nb_support == 0\n");
+	//		nb_pe.domain.at(ti) = false;
+	//	} else {
+	//		nb_pe.domain.at(ti) = true;
+	//	}
+
+	//	//if (val && !did_contain) {
+	//	//	++self_support;
+	//	//	//++nb_support;
+	//	//} else if (!val && did_contain) {
+	//	//	--self_support;
+	//	//	//--nb_support;
+	//	//}
+	//	//if (did_contain && self_support == 0) {
+	//	//	self.domain.at(ti) = false;
+	//	//} else if (!did_contain && self_support > 0) {
+	//	//	self.domain.at(ti) = true;
+	//	//}
+	//}
 }
 //--------
 Wfc::Wfc() {}
@@ -585,6 +605,7 @@ void Wfc::gen() {
 			//printout("failed `_propagate()`: ",
 			//	_baktk_stk.size(),
 			//	"\n");
+			//_dbg_print(to_push.potential);
 			//#endif		// DEBUG
 			if (backtrack()) {
 				//need_pop = true;
@@ -1189,20 +1210,28 @@ void Wfc::_add_constraint(
 
 	//return changed;
 }
-void Wfc::_dbg_print(const BaktkStkItem& bts_item) const {
+void Wfc::_dbg_print(const Potential& potential) const {
 	Vec2<size_t> pos;
 	for (pos.y=0; pos.y<size_2d().y; ++pos.y) {
 		//printout(pos.y, ": ");
 		for (pos.x=0; pos.x<size_2d().x; ++pos.x) {
+			//printout(pos, "\n");
+			//printout(bts_item.potential.size());
+			//if (bts_item.potential.size() > 0) {
+			//	printout(" ", bts_item.potential.front().size());
+			//}
+			//printout("\n");
 			const PotElem& pot_elem
-				= bts_item.potential.at(pos.y).at(pos.x);
+				= potential.at(pos.y).at(pos.x);
 			//if (pot_elem.size() == 1)
 			if (pot_elem.num_active() == 1) {
+				//printout("pot_elem.num_active() == 1\n");
 				//printout(static_cast<char>
 				//	(mt_darr().at(*pot_elem.begin()).tl_corner()));
 				printout(static_cast<char>
 					(mt_darr().at(*pot_elem.first_set()).tl_corner()));
 			} else {
+				//printout("pot_elem.num_active() != 1\n");
 				//printout(pot_elem.size());
 				if (pot_elem.num_active() <= 9) {
 					printout(pot_elem.num_active());

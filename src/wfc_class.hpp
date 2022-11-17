@@ -16,7 +16,7 @@ namespace wfc {
 //	Sea = 'S',
 //	//Mountain = 'M',
 //};
-using TileUset = std::unordered_set<size_t>;
+//using TileUset = std::unordered_set<size_t>;
 
 class PotElem;
 
@@ -36,19 +36,19 @@ std::vector<Neighbor> calc_neighbors(
 //--------
 class PotElem final {
 public:		// types
-	using SupportDa2d = std::vector<std::vector<size_t>>;
+	using SupportDa2d = std::vector<std::vector<u16>>;
 public:		// variables
 	//std::unordered_set<size_t> data;
 	//std::vector<std::optional<std::string>> data;
 	std::vector<bool> domain;
-	SupportDa2d support_da2d;
+	//SupportDa2d support_da2d;
 	//std::unordered_map<Dir, std::vector<size_t>> support_umap;
 public:		// functions
 	inline PotElem() = default;
 	inline PotElem(size_t size) {
 		domain = std::vector<bool>(size, true);
-		support_da2d = SupportDa2d(size_t(Dir::Lim),
-			std::vector<size_t>(size, size));
+		//support_da2d = SupportDa2d(size_t(Dir::Lim),
+		//	std::vector<size_t>(size, size));
 	}
 	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(PotElem);
 	inline ~PotElem() = default;
@@ -408,9 +408,9 @@ private:		// functions
 		return calc_neighbors(size_2d(), pos);
 	}
 	//--------
-	void _dbg_print(const BaktkStkItem& bts_item) const;
+	void _dbg_print(const Potential& potential) const;
 	inline void _dbg_print() const {
-		_dbg_print(_baktk_stk.top());
+		_dbg_print(_baktk_stk.top().potential);
 	}
 	//--------
 };
