@@ -35,9 +35,15 @@ int main(int argc, char** argv) {
 	ArgParser ap;
 	ap
 		.add_singleton("--input-file", "-i", HasArg::Req, true)
+
 		.add_singleton("--width", "-w", HasArg::Req, true)
 		.add_singleton("--height", "-h", HasArg::Req, true)
 		.add_singleton("--metatile-dim", "-d", HasArg::Req, false)
+
+		//.add_singleton("--chunk-width", "-W", HasArg::Req, false)
+		//.add_singleton("--chunk-height", "-H", HasArg::Req, false)
+		//.add_singleton("--num-chunks", "-n", HasArg::Req, false)
+
 		.add_singleton("--backtrack", "-b", HasArg::None, false)
 		.add_singleton("--overlap", "-o", HasArg::None, false)
 		.add_singleton("--rotate", "-r", HasArg::None, false)
