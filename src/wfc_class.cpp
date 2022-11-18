@@ -663,7 +663,7 @@ void Wfc::gen() {
 						continue;
 					} else { // if (!backtrack())
 						//#ifdef DEBUG
-						printout("restarting\n");
+						//printout("restarting\n");
 						//#endif		// DEBUG
 						//return;
 						//restart = true;
@@ -757,8 +757,8 @@ void Wfc::gen() {
 				//}
 				//--------
 			}
-			_dbg_print(_result);
-			printout("\n");
+			//_dbg_print(_result);
+			//printout("\n");
 		}
 	}
 
