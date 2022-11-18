@@ -28,15 +28,27 @@ std::vector<Neighbor> calc_neighbors(
 //--------
 void PotElem::_set(
 	Potential& potential,
-	std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
+	std::vector<Vec2<size_t>>& modded_chunk_pos_darr,
 	const Vec2<size_t>& chunk_size_2d,
 	const Vec2<size_t>& pos, size_t ti, bool val
 ) {
 	PotElem& self = potential.at(pos.y).at(pos.x);
 	//const bool did_contain = self.contains(ti);
 	self.domain.at(ti) = val;
-	modded_chunk_pos_uset.insert(Vec2<size_t>
-		(pos.x / chunk_size_2d.x, pos.y / chunk_size_2d.y));
+	const Vec2<size_t> chunk_pos
+		(pos.x / chunk_size_2d.x, pos.y / chunk_size_2d.y);
+	bool found = false;
+	// It's assumed that `modded_chunk_pos_darr` will be small
+	for (const auto& item: modded_chunk_pos_darr) {
+		if (item == chunk_pos) {
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+		modded_chunk_pos_darr.push_back(chunk_pos);
+	}
+	//modded_chunk_pos_darr.insert(chunk_pos);
 
 	//const std::vector<Neighbor>& neighbors(calc_neighbors
 	//	(Vec2<size_t>(potential.front().size(), potential.size()), pos));
@@ -564,11 +576,11 @@ void Wfc::gen() {
 	Vec2<size_t> chunk_pos;
 	for (chunk_pos.y=0; chunk_pos.y<num_chunks_2d().y; ++chunk_pos.y) {
 		for (chunk_pos.x=0; chunk_pos.x<num_chunks_2d().x; ++chunk_pos.x) {
-			std::unordered_set<Vec2<size_t>> modded_chunk_pos_uset;
+			std::vector<Vec2<size_t>> modded_chunk_pos_darr;
 			for (;;) {
 				//printout("_baktk_stk.size(): ", _baktk_stk.size(), "; ");
 				BaktkStkItem& stk_top = _baktk_stk.back();
-				//stk_top.modded_chunk_pos_uset.clear();
+				//stk_top.modded_chunk_pos_darr.clear();
 
 				Potential& potential = stk_top.potential;
 				//printout("_stk_top.potential: ", potential.size());
@@ -616,7 +628,7 @@ void Wfc::gen() {
 				//for (size_t i=0; i<to_collapse.data.size(); ++i)
 				for (size_t i=0; i<default_pe().domain.size(); ++i) {
 					to_collapse.disable(to_push.potential,
-						modded_chunk_pos_uset, chunk_size_2d(),
+						modded_chunk_pos_darr, chunk_size_2d(),
 						guess_pos, i);
 				}
 
@@ -625,7 +637,7 @@ void Wfc::gen() {
 				//printout("guess_ti: ", guess_ti, "\n");
 				//to_collapse.insert(guess_ti);
 				to_collapse.enable(to_push.potential,
-					modded_chunk_pos_uset, chunk_size_2d(),
+					modded_chunk_pos_darr, chunk_size_2d(),
 					guess_pos, guess_ti);
 				//to_collapse.at(guess_ti) = 1;
 				//printout("to_collapse: ", to_collapse, "\n");
@@ -634,7 +646,7 @@ void Wfc::gen() {
 				bool failed = false;
 				try {
 					_propagate(to_push.potential,
-						modded_chunk_pos_uset,
+						modded_chunk_pos_darr,
 						guess_pos);
 				} catch (const std::exception& e) {
 					failed = true;
@@ -648,7 +660,7 @@ void Wfc::gen() {
 					if (backtrack()) {
 						//need_pop = true;
 						_baktk_stk.back().erase_guess
-							(modded_chunk_pos_uset,
+							(modded_chunk_pos_darr,
 							chunk_size_2d());
 						//if (_baktk_stk.back().guess_umap.size() == 0)
 						if (_baktk_stk.back().guess_darr.size() == 0) {
@@ -685,7 +697,7 @@ void Wfc::gen() {
 						//copy_chunk(_result, to_push.potential, chunk_pos);
 						_copy_modded_chunks(_result,
 							to_push.potential,
-							modded_chunk_pos_uset);
+							modded_chunk_pos_darr);
 						break;
 					}
 					to_push.least_entropy_pos_darr
@@ -710,7 +722,7 @@ void Wfc::gen() {
 							//	chunk_pos);
 							_copy_modded_chunks(_result,
 								_baktk_stk.back().potential,
-								modded_chunk_pos_uset);
+								modded_chunk_pos_darr);
 							//_result = _baktk_stk.back().potential;
 							break;
 						}
@@ -744,7 +756,7 @@ void Wfc::gen() {
 						//}
 						_copy_modded_chunks
 							(_baktk_stk.back().potential, _result,
-							modded_chunk_pos_uset);
+							modded_chunk_pos_darr);
 						_baktk_stk.back().least_entropy_pos_darr
 							= *_calc_least_entropy_pos_darr
 								(_baktk_stk.back().potential, chunk_pos);
@@ -982,7 +994,7 @@ auto Wfc::_calc_least_entropy_pos_darr(
 }
 void Wfc::_propagate(
 	Potential& potential,
-	std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
+	std::vector<Vec2<size_t>>& modded_chunk_pos_darr,
 	const Vec2<size_t>& start_pos
 ) {
 	std::queue<Vec2<size_t>> needs_update;
@@ -997,7 +1009,7 @@ void Wfc::_propagate(
 			const std::vector<Neighbor>& neighbors = _neighbors(pos);
 			for (const auto& neighbor: neighbors) {
 				_add_constraint(potential,
-					modded_chunk_pos_uset,
+					modded_chunk_pos_darr,
 					pos, neighbor, needs_update);
 			}
 		}
@@ -1009,7 +1021,7 @@ void Wfc::_propagate(
 }
 void Wfc::_add_constraint(
 	Potential& potential,
-	std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
+	std::vector<Vec2<size_t>>& modded_chunk_pos_darr,
 	const Vec2<size_t>& pos,
 
 	// `neighbor` stores the incoming `Dir`, and the outgoing `Dir` can be
@@ -1111,7 +1123,7 @@ void Wfc::_add_constraint(
 		//	to_erase_tile, "\n");
 		//nb_pot_elem.erase(to_erase_tile);
 		nb_pot_elem.disable(potential,
-			modded_chunk_pos_uset, chunk_size_2d(),
+			modded_chunk_pos_darr, chunk_size_2d(),
 			neighbor.pos, to_erase_tile);
 	}
 

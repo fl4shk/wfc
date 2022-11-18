@@ -68,7 +68,7 @@ public:		// functions
 private:		// static functions
 	static void _set(
 		Potential& potential,
-		std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
+		std::vector<Vec2<size_t>>& modded_chunk_pos_darr,
 		const Vec2<size_t>& chunk_size_2d,
 		const Vec2<size_t>& pos, size_t ti, bool val
 	);
@@ -88,22 +88,22 @@ public:		// static functions
 	//}
 	static inline void enable(
 		Potential& potential,
-		std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
+		std::vector<Vec2<size_t>>& modded_chunk_pos_darr,
 		const Vec2<size_t>& chunk_size_2d,
 		const Vec2<size_t>& pos, size_t ti
 	) {
 		_set(potential,
-			modded_chunk_pos_uset, chunk_size_2d,
+			modded_chunk_pos_darr, chunk_size_2d,
 			pos, ti, true);
 	}
 	static inline void disable(
 		Potential& potential,
-		std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
+		std::vector<Vec2<size_t>>& modded_chunk_pos_darr,
 		const Vec2<size_t>& chunk_size_2d,
 		const Vec2<size_t>& pos, size_t ti
 	) {
 		_set(potential,
-			modded_chunk_pos_uset, chunk_size_2d,
+			modded_chunk_pos_darr, chunk_size_2d,
 			pos, ti, false);
 	}
 public:		// functions
@@ -188,7 +188,7 @@ public:		// types
 
 		//std::unordered_map<Vec2<size_t>, PotElem> guess_darr;
 		//PotentialUmap guess_umap;
-		//std::unordered_set<Vec2<size_t>> modded_chunk_pos_uset;
+		//std::vector<Vec2<size_t>> modded_chunk_pos_darr;
 		std::vector<Guess> guess_darr;
 		size_t guess_index = size_t(-1);
 		Vec2<size_t> guess_pos = Vec2<size_t>(-1, -1);
@@ -265,7 +265,7 @@ public:		// types
 		//	return guess().second;
 		//}
 		inline void erase_guess(
-			std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
+			std::vector<Vec2<size_t>>& modded_chunk_pos_darr,
 			const Vec2<size_t>& chunk_size_2d
 		) {
 			//guess_umap.at(guess_pos).erase(guess_ti);
@@ -276,7 +276,7 @@ public:		// types
 			//guess_darr.at(guess_index).second.erase(guess_ti);
 			guess_darr.at(guess_index).second.disable
 				(potential,
-				modded_chunk_pos_uset, chunk_size_2d,
+				modded_chunk_pos_darr, chunk_size_2d,
 				guess_pos, guess_ti);
 			if (guess_darr.at(guess_index).second.num_active() == 0) {
 				guess_darr.erase(guess_darr.begin() + guess_index);
@@ -284,7 +284,7 @@ public:		// types
 		}
 	};
 private:		// variables
-	//std::unordered_set<Vec2<size_t>> _modded_chunk_pos_uset;
+	//std::vector<Vec2<size_t>> _modded_chunk_pos_darr;
 	//std::stack<std::vector<Potential>> _potential_darr_stk;
 	std::vector<BaktkStkItem> _baktk_stk; // for backtracking
 	PotElem _default_pe;
@@ -423,12 +423,12 @@ private:		// functions
 	//--------
 	void _propagate(
 		Potential& potential,
-		std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
+		std::vector<Vec2<size_t>>& modded_chunk_pos_darr,
 		const Vec2<size_t>& start_pos
 	);
 	void _add_constraint(
 		Potential& potential,
-		std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
+		std::vector<Vec2<size_t>>& modded_chunk_pos_darr,
 		const Vec2<size_t>& pos,
 		const Neighbor& neighbor,
 		std::queue<Vec2<size_t>>& needs_update
@@ -442,10 +442,10 @@ private:		// functions
 	//--------
 	inline void _copy_modded_chunks(
 		Potential& output, const Potential& to_copy,
-		const std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset
+		const std::vector<Vec2<size_t>>& modded_chunk_pos_darr
 		//const Vec2<size_t>& chunk_pos
 	) {
-		for (const Vec2<size_t>& chunk_pos: modded_chunk_pos_uset) {
+		for (const Vec2<size_t>& chunk_pos: modded_chunk_pos_darr) {
 			Vec2<size_t> pos;
 			for (
 				pos.y=chunk_pos.y * chunk_size_2d().y;
