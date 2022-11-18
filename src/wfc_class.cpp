@@ -27,11 +27,16 @@ std::vector<Neighbor> calc_neighbors(
 }
 //--------
 void PotElem::_set(
-	Potential& potential, const Vec2<size_t>& pos, size_t ti, bool val
+	Potential& potential,
+	std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
+	const Vec2<size_t>& chunk_size_2d,
+	const Vec2<size_t>& pos, size_t ti, bool val
 ) {
 	PotElem& self = potential.at(pos.y).at(pos.x);
 	//const bool did_contain = self.contains(ti);
 	self.domain.at(ti) = val;
+	modded_chunk_pos_uset.insert(Vec2<size_t>
+		(pos.x / chunk_size_2d.x, pos.y / chunk_size_2d.y));
 
 	//const std::vector<Neighbor>& neighbors(calc_neighbors
 	//	(Vec2<size_t>(potential.front().size(), potential.size()), pos));
@@ -559,9 +564,11 @@ void Wfc::gen() {
 	Vec2<size_t> chunk_pos;
 	for (chunk_pos.y=0; chunk_pos.y<num_chunks_2d().y; ++chunk_pos.y) {
 		for (chunk_pos.x=0; chunk_pos.x<num_chunks_2d().x; ++chunk_pos.x) {
+			std::unordered_set<Vec2<size_t>> modded_chunk_pos_uset;
 			for (;;) {
 				//printout("_baktk_stk.size(): ", _baktk_stk.size(), "; ");
 				BaktkStkItem& stk_top = _baktk_stk.back();
+				//stk_top.modded_chunk_pos_uset.clear();
 
 				Potential& potential = stk_top.potential;
 				//printout("_stk_top.potential: ", potential.size());
@@ -588,11 +595,11 @@ void Wfc::gen() {
 				//--------
 				BaktkStkItem to_push;
 
-				if (backtrack()) {
+				//if (backtrack()) {
 					to_push.potential = potential;
-				} else {
-					to_push.potential = std::move(potential);
-				}
+				//} else {
+				//	to_push.potential = std::move(potential);
+				//}
 
 				auto& to_collapse
 					= to_push.potential.at(guess_pos.y).at(guess_pos.x);
@@ -607,23 +614,28 @@ void Wfc::gen() {
 				//	= to_collapse.data.size();
 				//to_collapse.clear();
 				//for (size_t i=0; i<to_collapse.data.size(); ++i)
-				for (size_t i=0; i<default_pe().domain.size(); ++i)
-				{
-					to_collapse.disable(to_push.potential, guess_pos, i);
+				for (size_t i=0; i<default_pe().domain.size(); ++i) {
+					to_collapse.disable(to_push.potential,
+						modded_chunk_pos_uset, chunk_size_2d(),
+						guess_pos, i);
 				}
 
 				const auto& rng_val = ddist(_rng);
 				guess_ti = ct.tile_darr.at(rng_val);
 				//printout("guess_ti: ", guess_ti, "\n");
 				//to_collapse.insert(guess_ti);
-				to_collapse.enable(to_push.potential, guess_pos, guess_ti);
+				to_collapse.enable(to_push.potential,
+					modded_chunk_pos_uset, chunk_size_2d(),
+					guess_pos, guess_ti);
 				//to_collapse.at(guess_ti) = 1;
 				//printout("to_collapse: ", to_collapse, "\n");
 
 				//bool restart = false;
 				bool failed = false;
 				try {
-					_propagate(to_push.potential, guess_pos);
+					_propagate(to_push.potential,
+						modded_chunk_pos_uset,
+						guess_pos);
 				} catch (const std::exception& e) {
 					failed = true;
 					// We failed to `_propagate()`.
@@ -635,7 +647,9 @@ void Wfc::gen() {
 					//#endif		// DEBUG
 					if (backtrack()) {
 						//need_pop = true;
-						_baktk_stk.back().erase_guess();
+						_baktk_stk.back().erase_guess
+							(modded_chunk_pos_uset,
+							chunk_size_2d());
 						//if (_baktk_stk.back().guess_umap.size() == 0)
 						if (_baktk_stk.back().guess_darr.size() == 0) {
 							//#ifdef DEBUG
@@ -649,7 +663,7 @@ void Wfc::gen() {
 						continue;
 					} else { // if (!backtrack())
 						//#ifdef DEBUG
-						//printout("restarting\n");
+						printout("restarting\n");
 						//#endif		// DEBUG
 						//return;
 						//restart = true;
@@ -667,7 +681,11 @@ void Wfc::gen() {
 							(to_push.potential, chunk_pos);
 					if (!temp_least_entropy_pos_darr) {
 						//_result = std::move(to_push.potential);
-						copy_chunk(_result, to_push.potential, chunk_pos);
+						//_result = to_push.potential;
+						//copy_chunk(_result, to_push.potential, chunk_pos);
+						_copy_modded_chunks(_result,
+							to_push.potential,
+							modded_chunk_pos_uset);
 						break;
 					}
 					to_push.least_entropy_pos_darr
@@ -679,16 +697,21 @@ void Wfc::gen() {
 				} else { // if (!backtrack())
 					if (!failed) {
 						_baktk_stk.back().potential
-							= std::move(to_push.potential);
+							//= std::move(to_push.potential);
+							= to_push.potential;
 						auto temp_least_entropy_pos_darr
 							= _calc_least_entropy_pos_darr
 								(_baktk_stk.back().potential, chunk_pos);
 						if (!temp_least_entropy_pos_darr) {
 							//_result
 							//	= std::move(_baktk_stk.back().potential);
-							copy_chunk(_result,
+							//copy_chunk(_result,
+							//	_baktk_stk.back().potential,
+							//	chunk_pos);
+							_copy_modded_chunks(_result,
 								_baktk_stk.back().potential,
-								chunk_pos);
+								modded_chunk_pos_uset);
+							//_result = _baktk_stk.back().potential;
 							break;
 						}
 						_baktk_stk.back().least_entropy_pos_darr
@@ -710,7 +733,18 @@ void Wfc::gen() {
 						//	= Potential(full_size_2d().y,
 						//		std::vector<PotElem>
 						//			(full_size_2d().x, _default_pe));
-						_baktk_stk.back().potential = _orig_state;
+						//_baktk_stk.back().potential
+						//	//= _orig_state;
+						//	= _result;
+						//for (size_t j=0; j<3; ++j) {
+						//	for (size_t i=0; i<3; ++i) {
+						//		copy_chunk(_baktk_stk.back().potential,
+						//			_result, chunk_pos);
+						//	}
+						//}
+						_copy_modded_chunks
+							(_baktk_stk.back().potential, _result,
+							modded_chunk_pos_uset);
 						_baktk_stk.back().least_entropy_pos_darr
 							= *_calc_least_entropy_pos_darr
 								(_baktk_stk.back().potential, chunk_pos);
@@ -723,6 +757,8 @@ void Wfc::gen() {
 				//}
 				//--------
 			}
+			_dbg_print(_result);
+			printout("\n");
 		}
 	}
 
@@ -769,180 +805,7 @@ void Wfc::set_orig_state(PotentialUmap&& to_inject) {
 		orig_state_at(pos) = std::move(item.second);
 	}
 }
-//void Wfc::_post_process() {
-//}
 
-//void Wfc::_gen_iteration(
-//	//Potential& potential//,
-//	//size_t depth
-//) {
-//	Potential& potential = _baktk_stk.back().potential;
-//	const PosDarr& least_entropy_pos_darr
-//		//= _calc_least_entropy_pos_darr(potential);
-//		= _baktk_stk.back().least_entropy_pos_darr;
-//
-//	//if (!least_entropy_pos_darr) {
-//	//	//printout("test 2\n");
-//	//	return false;
-//	//}
-//
-//	//std::unordered_map<Vec2<size_t>, PotElem> temp_tile_umap;
-//	//PotentialUmap& temp_tile_umap;
-//	//for (const auto& pos: *least_entropy_pos_darr) {
-//	//	temp_tile_umap.insert(std::pair
-//	//		(pos, potential.at(pos.y).at(pos.x)));
-//	//}
-//	//std::vector<std::pair<Vec2<size_t>, size_t>> tried_tile_darr;
-//
-//	BaktkStkItem bts_item;
-//	Vec2<size_t> tc_pos;
-//	size_t ti; // tile index
-//
-//	class NextRet final {
-//	public:		// variables
-//		Potential pot;
-//		Vec2<size_t> tc_pos; // to collapse pos
-//		size_t
-//			ti; // tile index
-//			//le_darr_index;
-//		bool
-//			fail_0: 1 = false,
-//			fail_1: 1 = false;
-//	};
-//	auto next = [&](NextRet& ret) -> void {
-//		//NextRet ret
-//		//	{.pot=potential};
-//
-//		//const size_t temp_pos_index 
-//		//	= rng_run<size_t>(_rng,
-//		//		size_t(0), temp_tile_umap.size() - 1);
-//		//if (size_t i=0; true) {
-//		//	// Since `std::unordered_map`'s `iterator`s don't allow adding
-//		//	// arbitrary offsets to them, we use the below `for` loop.
-//		//	for (const auto& item: temp_tile_umap) {
-//		//		if (i == temp_pos_index) {
-//		//			ret.tc_pos = item.first;
-//		//			break;
-//		//		}
-//		//		++i;
-//		//	}
-//		//}
-//
-//		auto& to_collapse
-//			= ret.pot.at(ret.tc_pos.y).at(ret.tc_pos.x);
-//
-//		if (to_collapse.size() == 0) {
-//			//return std::nullopt;
-//			ret.fail_0 = true;
-//			//return ret;
-//		}
-//
-//		const CollapseTemps ct = _calc_collapse_temps
-//			(temp_tile_umap, ret.tc_pos);
-//		//Ddist ddist(ct.weight_darr.begin(), ct.weight_darr.end());
-//		Ddist ddist(ct.modded_weight_darr.begin(),
-//			ct.modded_weight_darr.end());
-//		to_collapse.clear();
-//
-//		const auto& rng_val = ddist(_rng);
-//		ret.ti = ct.tile_darr.at(rng_val);
-//		to_collapse.insert(ret.ti);
-//
-//		// pretty sure this is correct
-//		try {
-//			_propagate(ret.pot, ret.tc_pos);
-//		} catch (const std::exception& e) {
-//			//return std::nullopt;
-//			ret.fail_1 = true;
-//		}
-//		//return ret;
-//	};
-//
-//	//NextRet nr;
-//	//while (temp_tile_umap.size() > 0) {
-//	//	nr.pot = potential;
-//	//	_backtrack(nr.pot);
-//	//	nr = next();
-//	//	//if (nr.fail_0) {
-//	//	//	//return false;
-//	//	//} else if (nr.fail_1) {
-//	//	//	temp_tile_umap.at(nr.tc_pos).erase(nr.ti);
-//	//	//	if (temp_tile_umap.at(nr.tc_pos).size() == 0) {
-//	//	//		temp_tile_umap.erase(nr.tc_pos);
-//	//	//	}
-//	//	//	//_backtrack(nr.pot);
-//	//	//} else {
-//	//	//	potential = std::move(nr.pot);
-//	//	//	return true;
-//	//	//}
-//	//}
-//	//return false;
-//
-//	//NextRet nr
-//	//	{.pot=potential};
-//	//auto erase_maybe = [&]() -> void {
-//	//	if (nr.fail_0) {
-//	//		temp_tile_umap.erase(nr.tc_pos);
-//	//	} else if (nr.fail_1) {
-//	//		temp_tile_umap.at(nr.tc_pos).erase(nr.ti);
-//	//		if (temp_tile_umap.at(nr.tc_pos).size() == 0) {
-//	//			temp_tile_umap.erase(nr.tc_pos);
-//	//		}
-//	//	}
-//	//};
-//	////next(nr);
-//	////erase_maybe();
-//	//while (temp_tile_umap.size() > 0) {
-//	//	next(nr);
-//	//	erase_maybe();
-//	//}
-//	//printout("testificate\n");
-//}
-
-//auto Wfc::_backtrack_next(
-//	//std::vector<Vec2<size_t>>& least_entropy_pos_darr,
-//	//size_t to_collapse_pos_index,
-//	const Vec2<size_t>& to_collapse_pos,
-//	//size_t pot_index
-//	Potential& old_potential
-//) -> std::optional<Potential> {
-//	//auto to_collapse_pos = _rand_pos_w_least_entropy();
-//	//Potential potential(_potential_darr_stk.top().at(pot_index));
-//	Potential potential(old_potential);
-//
-//	auto& to_collapse
-//		= potential.at(to_collapse_pos.y).at(to_collapse_pos.x);
-//
-//	// The below commented-out `if` statement should never occur
-//	// because we do this check in `_rand_pos_w_least_entropy()`.
-//	if (to_collapse.size() == 0) {
-//		return std::nullopt;
-//	}
-//
-//	const CollapseTemps ct = _calc_collapse_temps
-//		(potential, to_collapse_pos);
-//	//Ddist ddist(ct.weight_darr.begin(), ct.weight_darr.end());
-//	Ddist ddist(ct.modded_weight_darr.begin(),
-//		ct.modded_weight_darr.end());
-//	to_collapse.clear();
-//
-//	const auto& rng_val = ddist(_rng);
-//	to_collapse.insert(ct.tile_darr.at(rng_val));
-//
-//	try {
-//		_propagate(potential, to_collapse_pos);
-//		return potential;
-//	} catch (const std::exception& e) {
-//		return std::nullopt;
-//	}
-//
-//	//return true;
-//}
-
-//bool Wfc::_gen_inner_iteration() {
-//}
-//bool Wfc::_inner_gen_iteration() {
-//}
 auto Wfc::_calc_collapse_temps(
 	const Potential& potential,
 	//const PotentialUmap& pot_umap,
@@ -1119,6 +982,7 @@ auto Wfc::_calc_least_entropy_pos_darr(
 }
 void Wfc::_propagate(
 	Potential& potential,
+	std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
 	const Vec2<size_t>& start_pos
 ) {
 	std::queue<Vec2<size_t>> needs_update;
@@ -1132,7 +996,9 @@ void Wfc::_propagate(
 			needs_update.pop();
 			const std::vector<Neighbor>& neighbors = _neighbors(pos);
 			for (const auto& neighbor: neighbors) {
-				_add_constraint(potential, pos, neighbor, needs_update);
+				_add_constraint(potential,
+					modded_chunk_pos_uset,
+					pos, neighbor, needs_update);
 			}
 		}
 	}
@@ -1143,6 +1009,7 @@ void Wfc::_propagate(
 }
 void Wfc::_add_constraint(
 	Potential& potential,
+	std::unordered_set<Vec2<size_t>>& modded_chunk_pos_uset,
 	const Vec2<size_t>& pos,
 
 	// `neighbor` stores the incoming `Dir`, and the outgoing `Dir` can be
@@ -1243,7 +1110,9 @@ void Wfc::_add_constraint(
 		//	nb_pot_elem.contains(to_erase_tile), " ",
 		//	to_erase_tile, "\n");
 		//nb_pot_elem.erase(to_erase_tile);
-		nb_pot_elem.disable(potential, neighbor.pos, to_erase_tile);
+		nb_pot_elem.disable(potential,
+			modded_chunk_pos_uset, chunk_size_2d(),
+			neighbor.pos, to_erase_tile);
 	}
 
 	//if (nb_pot_elem.size() == 0)
