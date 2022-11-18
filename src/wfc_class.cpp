@@ -34,7 +34,12 @@ void PotElem::_set(
 ) {
 	PotElem& self = potential.at(pos.y).at(pos.x);
 	//const bool did_contain = self.contains(ti);
+	//if (pos == Vec2<size_t>(0, 0)) {
+	//	printout("PotElem::_set(): ", ti, " ", val, "\n");
+	//}
 	self.domain.at(ti) = val;
+
+	//modded_chunk_pos_darr.insert(chunk_pos);
 	const Vec2<size_t> chunk_pos
 		(pos.x / chunk_size_2d.x, pos.y / chunk_size_2d.y);
 	bool found = false;
@@ -48,7 +53,6 @@ void PotElem::_set(
 	if (!found) {
 		modded_chunk_pos_darr.push_back(chunk_pos);
 	}
-	//modded_chunk_pos_darr.insert(chunk_pos);
 
 	//const std::vector<Neighbor>& neighbors(calc_neighbors
 	//	(Vec2<size_t>(potential.front().size(), potential.size()), pos));
@@ -563,20 +567,28 @@ void Wfc::gen() {
 	//		{0, 0});
 	////_baktk_stk.back().init_guess_umap();
 	//_baktk_stk.back().init_guess_darr();
-	_baktk_stk.push_back(BaktkStkItem
-		{.potential=_result});
-	_baktk_stk.back().least_entropy_pos_darr
-		= *_calc_least_entropy_pos_darr
-			(_baktk_stk.back().potential, {0, 0});
-	//_baktk_stk.back().init_guess_umap();
-	_baktk_stk.back().init_guess_darr();
 
 	//bool
 	//	did_pop = false;
 	Vec2<size_t> chunk_pos;
 	for (chunk_pos.y=0; chunk_pos.y<num_chunks_2d().y; ++chunk_pos.y) {
 		for (chunk_pos.x=0; chunk_pos.x<num_chunks_2d().x; ++chunk_pos.x) {
-			std::vector<Vec2<size_t>> modded_chunk_pos_darr;
+			if (backtrack()) {
+				_baktk_stk.clear();
+			}
+			if (
+				backtrack()
+				|| chunk_pos == Vec2<size_t>(0, 0)
+			) {
+				_baktk_stk.push_back(BaktkStkItem
+					{.potential=_result});
+				_baktk_stk.back().least_entropy_pos_darr
+					= *_calc_least_entropy_pos_darr
+						(_baktk_stk.back().potential, chunk_pos);
+				//_baktk_stk.back().init_guess_umap();
+				_baktk_stk.back().init_guess_darr();
+			}
+			//std::vector<Vec2<size_t>> modded_chunk_pos_darr;
 			for (;;) {
 				//printout("_baktk_stk.size(): ", _baktk_stk.size(), "; ");
 				BaktkStkItem& stk_top = _baktk_stk.back();
@@ -607,11 +619,16 @@ void Wfc::gen() {
 				//--------
 				BaktkStkItem to_push;
 
-				//if (backtrack()) {
+				if (backtrack()) {
 					to_push.potential = potential;
-				//} else {
-				//	to_push.potential = std::move(potential);
-				//}
+					to_push.modded_chunk_pos_darr
+						= stk_top.modded_chunk_pos_darr;
+					//to_push.modded_chunk_pos_darr
+				} else {
+					to_push.potential = std::move(potential);
+					to_push.modded_chunk_pos_darr
+						= std::move(stk_top.modded_chunk_pos_darr);
+				}
 
 				auto& to_collapse
 					= to_push.potential.at(guess_pos.y).at(guess_pos.x);
@@ -621,32 +638,27 @@ void Wfc::gen() {
 					//= _calc_collapse_temps(potential, guess_pos);
 				Ddist ddist(ct.modded_weight_darr.begin(),
 					ct.modded_weight_darr.end());
-				//const size_t old_to_collapse_size
-				//	//= to_collapse.num_active();
-				//	= to_collapse.data.size();
 				//to_collapse.clear();
 				//for (size_t i=0; i<to_collapse.data.size(); ++i)
 				for (size_t i=0; i<default_pe().domain.size(); ++i) {
 					to_collapse.disable(to_push.potential,
-						modded_chunk_pos_darr, chunk_size_2d(),
+						to_push.modded_chunk_pos_darr, chunk_size_2d(),
 						guess_pos, i);
 				}
 
 				const auto& rng_val = ddist(_rng);
 				guess_ti = ct.tile_darr.at(rng_val);
-				//printout("guess_ti: ", guess_ti, "\n");
 				//to_collapse.insert(guess_ti);
 				to_collapse.enable(to_push.potential,
-					modded_chunk_pos_darr, chunk_size_2d(),
+					to_push.modded_chunk_pos_darr, chunk_size_2d(),
 					guess_pos, guess_ti);
-				//to_collapse.at(guess_ti) = 1;
-				//printout("to_collapse: ", to_collapse, "\n");
 
-				//bool restart = false;
+				//to_collapse.at(guess_ti) = 1;
+
 				bool failed = false;
 				try {
 					_propagate(to_push.potential,
-						modded_chunk_pos_darr,
+						to_push.modded_chunk_pos_darr,
 						guess_pos);
 				} catch (const std::exception& e) {
 					failed = true;
@@ -655,12 +667,66 @@ void Wfc::gen() {
 					//printout("failed `_propagate()`: ",
 					//	_baktk_stk.size(),
 					//	"\n");
+					//_dbg_print(_baktk_stk.back().potential);
 					//_dbg_print(to_push.potential);
 					//#endif		// DEBUG
-					if (backtrack()) {
+
+					//_baktk_stk.back().modded_chunk_pos_darr
+
+					//if (backtrack()) {
+					//	//need_pop = true;
+					//	_baktk_stk.back().erase_guess
+					//		(to_push.modded_chunk_pos_darr,
+					//		chunk_size_2d());
+					//	//if (_baktk_stk.back().guess_umap.size() == 0)
+					//	if (_baktk_stk.back().guess_darr.size() == 0) {
+					//		//#ifdef DEBUG
+					//		printout("failed `_propagate()`: ",
+					//			"doing `_baktk_stk.pop_back()`\n");
+					//		//#endif		// DEBUG
+					//		//did_pop = true;
+					//		_baktk_stk.pop_back();
+					//	}
+
+					//	//continue;
+					//} else { // if (!backtrack())
+					//	//#ifdef DEBUG
+					//	//printout("restarting\n");
+					//	//#endif		// DEBUG
+					//	//return;
+					//}
+				}
+
+				//if (backtrack()) {
+				//	//_baktk_stk.back().potential = to_push.potential;
+				//} else { // if (!backtrack())
+				//}
+
+				if (backtrack()) {
+					if (!failed) {
+						//printout("backtrack() && !failed: ");
+						auto temp_least_entropy_pos_darr
+							= _calc_least_entropy_pos_darr
+								(to_push.potential, chunk_pos);
+						if (!temp_least_entropy_pos_darr) {
+							//_result = std::move(to_push.potential);
+							//_result = to_push.potential;
+							//copy_chunk(_result, to_push.potential, chunk_pos);
+							_copy_modded_chunks(_result,
+								to_push.potential,
+								to_push.modded_chunk_pos_darr);
+							break;
+						}
+						to_push.least_entropy_pos_darr
+							= *temp_least_entropy_pos_darr;
+						//to_push.init_guess_umap();
+						to_push.init_guess_darr();
+
+						_baktk_stk.push_back(std::move(to_push));
+					} else { // if (failed)
 						//need_pop = true;
 						_baktk_stk.back().erase_guess
-							(modded_chunk_pos_darr,
+							(to_push.modded_chunk_pos_darr,
 							chunk_size_2d());
 						//if (_baktk_stk.back().guess_umap.size() == 0)
 						if (_baktk_stk.back().guess_darr.size() == 0) {
@@ -671,46 +737,16 @@ void Wfc::gen() {
 							//did_pop = true;
 							_baktk_stk.pop_back();
 						}
-
-						continue;
-					} else { // if (!backtrack())
-						//#ifdef DEBUG
-						//printout("restarting\n");
-						//#endif		// DEBUG
-						//return;
-						//restart = true;
 					}
-				}
-
-				//if (backtrack()) {
-				//	//_baktk_stk.back().potential = to_push.potential;
-				//} else { // if (!backtrack())
-				//}
-
-				if (backtrack()) {
-					auto temp_least_entropy_pos_darr
-						= _calc_least_entropy_pos_darr
-							(to_push.potential, chunk_pos);
-					if (!temp_least_entropy_pos_darr) {
-						//_result = std::move(to_push.potential);
-						//_result = to_push.potential;
-						//copy_chunk(_result, to_push.potential, chunk_pos);
-						_copy_modded_chunks(_result,
-							to_push.potential,
-							modded_chunk_pos_darr);
-						break;
-					}
-					to_push.least_entropy_pos_darr
-						= *temp_least_entropy_pos_darr;
-					//to_push.init_guess_umap();
-					to_push.init_guess_darr();
-
-					_baktk_stk.push_back(std::move(to_push));
 				} else { // if (!backtrack())
 					if (!failed) {
 						_baktk_stk.back().potential
-							//= std::move(to_push.potential);
-							= to_push.potential;
+							= std::move(to_push.potential);
+							//= to_push.potential;
+						_baktk_stk.back().modded_chunk_pos_darr
+							= std::move(to_push.modded_chunk_pos_darr);
+							//= to_push.modded_chunk_pos_darr;
+
 						auto temp_least_entropy_pos_darr
 							= _calc_least_entropy_pos_darr
 								(_baktk_stk.back().potential, chunk_pos);
@@ -722,7 +758,7 @@ void Wfc::gen() {
 							//	chunk_pos);
 							_copy_modded_chunks(_result,
 								_baktk_stk.back().potential,
-								modded_chunk_pos_darr);
+								_baktk_stk.back().modded_chunk_pos_darr);
 							//_result = _baktk_stk.back().potential;
 							break;
 						}
@@ -738,25 +774,19 @@ void Wfc::gen() {
 						//	temp_pe.num_active(), "\n");
 						//_baktk_stk.push_back(std::move(to_push));
 						//printout("_dbg_print(): \n");
-						//_dbg_print();
+						//_dbg_print(_baktk_stk.back().potential);
 						//_baktk_stk.pop_back();
 
 						//_baktk_stk.back().potential
 						//	= Potential(full_size_2d().y,
 						//		std::vector<PotElem>
 						//			(full_size_2d().x, _default_pe));
-						//_baktk_stk.back().potential
-						//	//= _orig_state;
-						//	= _result;
-						//for (size_t j=0; j<3; ++j) {
-						//	for (size_t i=0; i<3; ++i) {
-						//		copy_chunk(_baktk_stk.back().potential,
-						//			_result, chunk_pos);
-						//	}
-						//}
-						_copy_modded_chunks
-							(_baktk_stk.back().potential, _result,
-							modded_chunk_pos_darr);
+						_baktk_stk.back().potential
+							//= _orig_state;
+							= _result;
+						//_copy_modded_chunks
+						//	(_baktk_stk.back().potential, _result,
+						//	_baktk_stk.back().modded_chunk_pos_darr);
 						_baktk_stk.back().least_entropy_pos_darr
 							= *_calc_least_entropy_pos_darr
 								(_baktk_stk.back().potential, chunk_pos);

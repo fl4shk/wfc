@@ -188,7 +188,7 @@ public:		// types
 
 		//std::unordered_map<Vec2<size_t>, PotElem> guess_darr;
 		//PotentialUmap guess_umap;
-		//std::vector<Vec2<size_t>> modded_chunk_pos_darr;
+		std::vector<Vec2<size_t>> modded_chunk_pos_darr;
 		std::vector<Guess> guess_darr;
 		size_t guess_index = size_t(-1);
 		Vec2<size_t> guess_pos = Vec2<size_t>(-1, -1);
@@ -265,7 +265,7 @@ public:		// types
 		//	return guess().second;
 		//}
 		inline void erase_guess(
-			std::vector<Vec2<size_t>>& modded_chunk_pos_darr,
+			std::vector<Vec2<size_t>>& some_chunk_pos_darr,
 			const Vec2<size_t>& chunk_size_2d
 		) {
 			//guess_umap.at(guess_pos).erase(guess_ti);
@@ -276,7 +276,7 @@ public:		// types
 			//guess_darr.at(guess_index).second.erase(guess_ti);
 			guess_darr.at(guess_index).second.disable
 				(potential,
-				modded_chunk_pos_darr, chunk_size_2d,
+				some_chunk_pos_darr, chunk_size_2d,
 				guess_pos, guess_ti);
 			if (guess_darr.at(guess_index).second.num_active() == 0) {
 				guess_darr.erase(guess_darr.begin() + guess_index);
