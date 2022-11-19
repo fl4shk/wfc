@@ -300,10 +300,11 @@ private:		// variables
 	size_t 
 		_mt_dim = 1; // metatile dimension
 	bool
-		_backtrack = false,
-		_overlap = false,
-		_rotate = false,
-		_reflect = false;
+		_opt_debug_print = false,
+		_opt_backtrack = false,
+		_opt_overlap = false,
+		_opt_rotate = false,
+		_opt_reflect = false;
 	//std::unordered_map<size_t, RuleUset> _rules_umap;
 	//RuleUset _rule_uset;
 
@@ -328,9 +329,10 @@ public:		// functions
 		const Vec2<size_t>& s_num_chunks_2d,
 		size_t s_mt_dim,
 		//const std::vector<std::vector<size_t>>& input_tiles,
-		bool s_backtrack,
-		bool s_overlap,
-		bool s_rotate, bool s_reflect,
+		bool s_opt_debug_print,
+		bool s_opt_backtrack,
+		bool s_opt_overlap,
+		bool s_opt_rotate, bool s_opt_reflect,
 		u64 s_rng_seed
 	);
 	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(Wfc);
@@ -368,10 +370,11 @@ public:		// functions
 	GEN_GETTER_BY_CON_REF(mt_dim);
 	//GEN_GETTER_BY_CON_REF(rules_umap);
 	//GEN_GETTER_BY_CON_REF(rule_uset);
-	GEN_GETTER_BY_VAL(backtrack);
-	GEN_GETTER_BY_VAL(overlap);
-	GEN_GETTER_BY_VAL(rotate);
-	GEN_GETTER_BY_VAL(reflect);
+	GEN_GETTER_BY_VAL(opt_debug_print);
+	GEN_GETTER_BY_VAL(opt_backtrack);
+	GEN_GETTER_BY_VAL(opt_overlap);
+	GEN_GETTER_BY_VAL(opt_rotate);
+	GEN_GETTER_BY_VAL(opt_reflect);
 	GEN_GETTER_BY_CON_REF(mt_darr);
 	GEN_GETTER_BY_CON_REF(r2w_umap);
 	//GEN_GETTER_BY_CON_REF(weight_umap);
@@ -386,7 +389,7 @@ private:		// functions
 	//	//Potential& potential//,
 	//	//size_t depth
 	//);
-	//void _backtrack();
+	//void _opt_backtrack();
 	//std::optional<Potential> _backtrack_next(
 	//	//std::vector<Vec2<size_t>>& least_entropy_pos_darr,
 	//	//size_t to_collapse_pos_index,

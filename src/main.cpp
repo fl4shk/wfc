@@ -52,6 +52,8 @@ int main(int argc, char** argv) {
 					"(metatiles). ",
 				"\n\tThis option only takes effect with --overlap.",
 				"\n\tDefaults to 1.\n\t"))
+		.add_singleton("--debug-print", "-p", HasArg::None, false,
+			"\n\tShow progress with debug printing\n\t")
 
 		.add_singleton("--backtrack", "-b", HasArg::None, false,
 			sconcat
@@ -146,7 +148,9 @@ int main(int argc, char** argv) {
 
 	static constexpr size_t
 		MIN_NUM_CHUNKS_DIM = 1,
-		MAX_NUM_CHUNKS_DIM = 4;
+		MAX_NUM_CHUNKS_DIM
+			//= 4;
+			= 10;
 	Vec2<size_t> num_chunks_2d(1, 1);
 	if (ap.has_opts("--num-chunks-x")) {
 		inv_sconcat(ap.at("--num-chunks-x", 0).val, num_chunks_2d.x);
@@ -180,10 +184,11 @@ int main(int argc, char** argv) {
 	}
 
 	const bool
-		backtrack = ap.has_opts("--backtrack"),
-		overlap = ap.has_opts("--overlap"),
-		rotate = ap.has_opts("--rotate"),
-		reflect = ap.has_opts("--reflect");
+		opt_debug_print = ap.has_opts("--debug-print"),
+		opt_backtrack = ap.has_opts("--backtrack"),
+		opt_overlap = ap.has_opts("--overlap"),
+		opt_rotate = ap.has_opts("--rotate"),
+		opt_reflect = ap.has_opts("--reflect");
 
 	u64 rng_seed;
 
@@ -197,10 +202,14 @@ int main(int argc, char** argv) {
 		(chunk_size_2d, num_chunks_2d,
 		mt_dim,
 		//input_tiles,
-		backtrack, overlap, rotate, reflect,
+		opt_debug_print,
+		opt_backtrack, opt_overlap, opt_rotate, opt_reflect,
 		rng_seed);
 	the_wfc.learn(input_tiles);
 	the_wfc.gen();
+	if (opt_debug_print) {
+		printout("Result:\n");
+	}
 	for (size_t j=0; j<the_wfc.result().size(); ++j) {
 		const auto& row = the_wfc.result().at(j);
 		//printout(j, ": ");
