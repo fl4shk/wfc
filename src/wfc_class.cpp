@@ -519,6 +519,21 @@ void Wfc::learn(const std::vector<std::vector<size_t>>& input_tiles) {
 	}
 	//--------
 }
+void Wfc::copy_knowledge(
+	const std::optional<MtDarr>& n_mt_darr,
+	const std::optional<R2wUmap>& n_r2w_umap,
+	const std::optional<WeightDarr>& n_weight_darr
+) {
+	if (n_mt_darr) {
+		_mt_darr = *n_mt_darr;
+	}
+	if (n_r2w_umap) {
+		_r2w_umap = *n_r2w_umap;
+	}
+	if (n_weight_darr) {
+		_weight_darr = *n_weight_darr;
+	}
+}
 void Wfc::copy_knowledge(const Wfc& to_copy) {
 	if (mt_dim() != to_copy.mt_dim()) {
 		throw std::invalid_argument(sconcat
@@ -544,9 +559,8 @@ void Wfc::copy_knowledge(const Wfc& to_copy) {
 			"`opt_reflect() (", opt_reflect(), ") "
 			"!= to_copy.opt_reflect() (", to_copy.opt_reflect(), ")`"));
 	}
-	_mt_darr = to_copy.mt_darr();
-	_r2w_umap = to_copy.r2w_umap();
-	_weight_darr = to_copy.weight_darr();
+	copy_knowledge
+		(to_copy.mt_darr(), to_copy.r2w_umap(), to_copy.weight_darr());
 }
 void Wfc::gen() {
 	//while (_gen_iteration()) {

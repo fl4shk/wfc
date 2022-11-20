@@ -308,15 +308,20 @@ private:		// variables
 	//std::unordered_map<size_t, RuleUset> _rules_umap;
 	//RuleUset _rule_uset;
 
-	std::vector<Metatile> _mt_darr;
+public:		// types
+	using MtDarr = std::vector<Metatile>;
+	using R2wUmap = std::unordered_map<Rule, double>;
+	using WeightDarr = std::vector<double>;
+private:		// variables
+	MtDarr _mt_darr;
 	//std::unordered_map<size_t, Metatile> _input_to_mt_umap;
 
 	// This maps rules to their weights
-	std::unordered_map<Rule, double> _r2w_umap;
+	R2wUmap _r2w_umap;
 
 	// This maps tiles to their weights
 	//std::unordered_map<size_t, double> _weight_umap;
-	std::vector<double> _weight_darr;
+	WeightDarr _weight_darr;
 public:		// types
 	using Rng = pcg64;
 	using Ddist = std::discrete_distribution<u64>;
@@ -338,6 +343,15 @@ public:		// functions
 	GEN_CM_BOTH_CONSTRUCTORS_AND_ASSIGN(Wfc);
 	~Wfc();
 	void learn(const std::vector<std::vector<size_t>>& input_tiles);
+
+	// Use this function wisely, as it could potentially make this class
+	// not work properly.
+	void copy_knowledge(
+		const std::optional<MtDarr>& n_mt_darr,
+		const std::optional<R2wUmap>& n_r2w_umap,
+		const std::optional<WeightDarr>& n_weight_darr
+	);
+
 	void copy_knowledge(const Wfc& to_copy);
 	void gen();
 	void set_orig_state(const PotentialUmap& to_inject);
